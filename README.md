@@ -11,3 +11,7 @@ All the appliation will require a .env file in root folder for access to openai 
 create a .env file as below:
 
 api_key = 'YOUR-API-KEY-OVER-HERE'
+
+
+Additionally, the application(s) use streamlit UI framework to display the contents on the web-browser.  
+visit streamlit.io to know more about this UI framework
