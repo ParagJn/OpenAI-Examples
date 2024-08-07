@@ -1,18 +1,15 @@
-#####
-# Chat bot based on open ai's gpt model(s)
-# requires an api key from openai. 
-# parag.jn@gmail.com
-####
-
 import streamlit as st
-import openai
 import time
 import json
 import os
 from datetime import datetime
-from dotenv import load_dotenv
+from openai_client import OpenAIClient
 
-## Setting page config
+# Initialize OpenAI Client
+openai_client_obj = OpenAIClient()
+client = openai_client_obj.get_client()
+
+# Streamlit application setup
 st.set_page_config(
     page_title="Open Ai - Chatbot",
     page_icon="🧊",
@@ -21,66 +18,33 @@ st.set_page_config(
     menu_items={
         'About': "# A simple open-ai based chatbot with model choices!"
     },
-) # end of page config
+)
 
-load_dotenv()  # Load the environment variables
-
-def validate_api_key(api_key):
-    """Validate the API key."""
-    openai.api_key = api_key
-    try:
-        openai.Model.list()
-        return True
-    except openai.error.AuthenticationError:
-        return False
-
-def get_valid_api_key():
-    """Prompt the user to input a valid API key until a valid one is provided."""
-    api_key = st.text_input("Please enter a valid OpenAI API key:", type="password")
-    if st.button("Validate"):
-        if validate_api_key(api_key):
-            st.success("API key is valid!")
-            return api_key
-        else:
-            st.error("Invalid API key. Please try again.")
-            st.stop()  # Stop the script until a valid API key is provided
-
-# Get or validate the API key
-API_KEY = os.environ.get("api_key")
-if not API_KEY or not validate_api_key(API_KEY):
-    API_KEY = get_valid_api_key()
-else:
-    openai.api_key = API_KEY
-
-st.title("GPT Chatbot") # page title
-
-# Ensure the feedback directory exists
+st.title("GPT Chatbot")
 feedback_dir = os.path.join("model_responses", "feedback")
 os.makedirs(feedback_dir, exist_ok=True)
 
-def generate_response(model, messages, temperature, agent_type = "Friendly Chatbot"):
+def generate_response(model, messages, temperature, max_tokens, agent_type="Friendly Chatbot"):
     try:
-        if agent_type == "Expert Programmer":
-            messages.insert(0, {"role": "system", "content": "You are an expert programmer. Provide detailed and advanced programming help."})
-        elif agent_type == "Friendly Chatbot":
-            messages.insert(0, {"role": "system", "content": "You are a helpful assistant. Provide friendly and useful responses."})
-        elif agent_type == "Travel Agent":
-            messages.insert(0, {"role": "system", "content": "You are a expert travel planner. Provide friendly best possible itinerary to make travel as enjoyable as possible."})
+        prepended_message = {
+            "Expert Programmer": "You are an expert programmer.",
+            "Friendly Chatbot": "You are a helpful assistant.",
+            "Travel Agent": "You are a travel planner."
+        }.get(agent_type, "You are a helpful assistant.")
 
-        response = openai.ChatCompletion.create(
-            model=f"{model}",
+        # Prepend system message according to agent type
+        messages.insert(0, {"role": "system", "content": prepended_message})
+
+        response = client.chat.completions.create(
+            model=model,
             messages=messages,
-            max_tokens=3500, # Reasonable token limit to optimize cost and performance
+            max_tokens=max_tokens,
             n=1,
             stop=None,
-            temperature=temperature, # Adjust temperature for better variability
+            temperature=temperature,
         )
-        return response.choices[0]['message']['content']
-    except openai.error.OpenAIError as e:
-        # Log the error and inform the user
-        st.error(f"There was an API error: {e}")
+        return response.choices[0].message.content
     except Exception as e:
-        # Catch-all for other exceptions
         st.error(f"An unexpected error occurred: {e}")
     return None
 
@@ -107,9 +71,11 @@ def main():
         # creativity slider
         creativity_value = st.slider("Response Type - Focussed to creative", min_value=0.1, max_value=1.0, step=0.1, value=0.5)
 
-        #agent type
-        agent_type = st.selectbox("Select your agent",options=['Friendly Chatbot','Expert Programmer','Travel Agent'])
-        st.write(agent_type)
+        # agent type
+        agent_type = st.selectbox("Select your agent", options=['Friendly Chatbot', 'Expert Programmer', 'Travel Agent'])
+
+        # max tokens
+        max_tokens = st.text_input("Enter max tokens",max_chars=5,value=100)
 
         # Clear history button
         if st.button("Clear History"):
@@ -130,7 +96,7 @@ def main():
     st.write("Hello! I am a chatbot powered by OpenAI's GPT-4. How can I help you today?")
     st.write("---")
     
-    st.session_state.user_input = st.text_input("You:", st.session_state.user_input, max_chars=300,)
+    st.session_state.user_input = st.text_input("You:", st.session_state.user_input, max_chars=300)
 
     if st.button("Send") and st.session_state.user_input:
         if model_selection != 'none':
@@ -139,7 +105,7 @@ def main():
                 messages = [{"role": "assistant" if i % 2 else "user", "content": message} for i, message in enumerate(st.session_state.history)]
                 messages.append({"role": "user", "content": st.session_state.user_input})
 
-                st.session_state.response = generate_response(model_selection, messages, creativity_value,agent_type)
+                st.session_state.response = generate_response(model_selection, messages, creativity_value, int(max_tokens), agent_type)
                 if st.session_state.response:
                     # Update history with new response
                     st.session_state.history.extend([
@@ -162,6 +128,6 @@ def main():
         else:
             st.warning("Select a model to continue.. ")
             st.stop()
-    
+
 if __name__ == "__main__":
     main()
