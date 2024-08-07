@@ -15,3 +15,10 @@ api_key = 'YOUR-API-KEY-OVER-HERE'
 
 Additionally, the application(s) use streamlit UI framework to display the contents on the web-browser.  
 visit streamlit.io to know more about this UI framework
+
+Note : 
+
+There are 2 version of openai connector class. 
+
+1. openai_client - this uses the latest version of openai = 1.39
+2. openai_connector - this uses older version of openai = 0.28. I have maintained this version for error management and compatibility with my older programs. 
