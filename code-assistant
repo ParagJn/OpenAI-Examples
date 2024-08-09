@@ -1,3 +1,11 @@
+# Code Assistant
+# This application will help the user with 2 things. 
+# 1. Generate a logical database design (coming soon)
+# 2. Be a coding assistant to do the following : Generate flow diagram in mermaid script, generate documentaiton or perform conversion to a different programming lanugage. 
+# Idea is to use these to save some time doing these tasks and thus, productivity gain. 
+# parag.jn@gmail.com
+# August 2024
+
 import streamlit as st
 
 # Streamlit application setup
