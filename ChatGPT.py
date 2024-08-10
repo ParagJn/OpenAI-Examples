@@ -124,7 +124,8 @@ def main():
                     st.write("**Bot:**")
                     st.write_stream((stream_data()))
                     st.write("---")
-                    st.session_state.feedback = "### Did you find the response helpful?"
+                    st.session_state.user_input = ""
+                    # st.session_state.feedback = "### Did you find the response helpful?"
         else:
             st.warning("Select a model to continue.. ")
             st.stop()
