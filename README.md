@@ -22,3 +22,4 @@ There are 2 version of openai connector class.
 
 1. openai_client - this uses the latest version of openai = 1.39
 2. openai_connector - this uses older version of openai = 0.28. I have maintained this version for error management and compatibility with my older programs. 
+3. Code-Assistant - this application is a simple version to generate documentation, process maps and convert the code. 
