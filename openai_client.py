@@ -5,8 +5,6 @@
 import os
 from dotenv import load_dotenv
 from openai import OpenAI
-import streamlit as st
-
 
 class OpenAIClient:
     def __init__(self):
@@ -19,7 +17,7 @@ class OpenAIClient:
             # Load the environment variables
             load_dotenv()
             # Get the API key
-            self.api_key = os.getenv("api_key")
+            self.api_key = os.getenv("OPENAI_API_KEY")
             if not self.api_key:
                 raise ValueError("API key is not set. Please check your environment variables.")
             
@@ -27,16 +25,14 @@ class OpenAIClient:
             self.openai_client = OpenAI(api_key=self.api_key)
             self.validate_key()
         except ValueError as e:
-            st.error(str(e))
-            st.stop()
-
+            raise Exception(str(e))
+            
     def validate_key(self):
         try:
             model_list = self.openai_client.models.list()
             return model_list
         except ValueError as e:
-            st.error(str(e))
-            st.stop()
+            raise Exception(str(e))
 
     def get_client(self):
         return self.openai_client
