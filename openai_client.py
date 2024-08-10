@@ -25,14 +25,14 @@ class OpenAIClient:
             self.openai_client = OpenAI(api_key=self.api_key)
             self.validate_key()
         except ValueError as e:
-            raise Exception(str(e))
+            raise ValueError("API key is not correct or expired. Please refresh key from openai and try again")
             
     def validate_key(self):
         try:
             model_list = self.openai_client.models.list()
             return model_list
         except ValueError as e:
-            raise Exception(str(e))
+            raise ValueError("API key is not correct or expired. Please refresh key from openai and try again")
 
     def get_client(self):
         return self.openai_client
