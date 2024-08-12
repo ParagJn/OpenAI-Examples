@@ -75,7 +75,7 @@ def main():
         agent_type = st.selectbox("Select your agent", options=['Friendly Chatbot', 'Expert Programmer', 'Travel Agent'])
 
         # max tokens
-        max_tokens = st.text_input("Enter max tokens",max_chars=5,value=100)
+        max_tokens = st.text_input("Enter max tokens. ",max_chars=5,value=100,help="Use wisely to manage costs")
 
         # Clear history button
         if st.button("Clear History"):
@@ -96,7 +96,7 @@ def main():
     st.write("Hello! I am a chatbot powered by OpenAI's GPT-4. How can I help you today?")
     st.write("---")
     
-    st.session_state.user_input = st.text_input("You:", st.session_state.user_input, max_chars=300)
+    st.session_state.user_input = st.text_input("Enter your query and press Enter:", st.session_state.user_input, max_chars=300)
 
     if st.button("Send") and st.session_state.user_input:
         if model_selection != 'none':
