@@ -29,7 +29,8 @@ def generate_response(model, messages, temperature, max_tokens, agent_type="Frie
         prepended_message = {
             "Expert Programmer": "You are an expert programmer.",
             "Friendly Chatbot": "You are a helpful assistant.",
-            "Travel Agent": "You are a travel planner."
+            "Travel Agent": "You are a travel planner.",
+            "Prompt Expert": "You are an expert prompt engineer"
         }.get(agent_type, "You are a helpful assistant.")
 
         # Prepend system message according to agent type
@@ -72,7 +73,7 @@ def main():
         creativity_value = st.slider("Response Type - Focussed to creative", min_value=0.1, max_value=1.0, step=0.1, value=0.5)
 
         # agent type
-        agent_type = st.selectbox("Select your agent", options=['Friendly Chatbot', 'Expert Programmer', 'Travel Agent'])
+        agent_type = st.selectbox("Select your agent", options=['Friendly Chatbot', 'Expert Programmer', 'Travel Agent','Prompt Expert'])
 
         # max tokens
         max_tokens = st.text_input("Enter max tokens. ",max_chars=5,value=100,help="Use wisely to manage costs")
