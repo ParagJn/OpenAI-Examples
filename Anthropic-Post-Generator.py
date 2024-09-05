@@ -35,7 +35,7 @@ Remember to keep the post concise and tailored to the specific platform's best p
         
         message = anthropic.messages.create(
             model="claude-3-5-sonnet-20240620",
-            system="you are a social media influencer",
+            system="You are an expert in generating posts for social media",
             max_tokens=1300,
             messages=[
                 {"role": "user", "content": prompt}
