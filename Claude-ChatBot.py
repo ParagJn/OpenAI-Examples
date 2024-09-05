@@ -41,7 +41,7 @@ st.sidebar.title("Chatbot Settings")
 
 with st.sidebar:
     st.write("---")
-    max_tokens = st.slider("Max Tokens",min_value=100,max_value=5000,value=100,step=10)
+    max_tokens = st.slider("Max Tokens",min_value=100,max_value=5000,value=300,step=10)
     model_choices = st.radio(
         "Select Model",
         ["None","Claude 3.5 Sonnet","Claude 3 Opus","Claude 3 Sonnet","Claude 3 Haiku"],
