@@ -1,26 +1,57 @@
-# OpenAI-Examples
+# AI-Powered Tools Collection
 
-Various examples of simple application that uses openai framework to generate the content. 
-Following are the applications created. 
+This repository contains a collection of AI-powered tools and applications leveraging various models and APIs. Each tool is designed to perform specific tasks, from generating content to assisting with code-related activities.
 
-1. ChatGPT - this is my version of the chatgpt; The app provides an option to select the list of openai models.
-2. Content summarizer - this applcation takes pdf document as an input and generates the summary of the contents
-3. Social Media Post Creator - this applicaiton takes an image as an input and generates social media friendly posts.
+## Tools Included
 
-All the appliation will require a .env file in root folder for access to openai api
-create a .env file as below:
+1. **Anthropic-Post-Generator**
+   - Generate posts for social media using Anthropic AI models.
 
-api_key = 'YOUR-API-KEY-OVER-HERE'
+2. **ChatGPT**
+   - A simple ChatGPT implementation using a pay-as-you-go model for generating responses.
 
+3. **Claude-Chatbot**
+   - A chatbot implementation using the Claude Sonnet 3.5 model for generating responses.
 
-Additionally, the application(s) use streamlit UI framework to display the contents on the web-browser.  
-visit streamlit.io to know more about this UI framework
+4. **Content-Summarizer**
+   - Summarize uploaded documents using OpenAI's models.
 
-Note : 
+5. **Code-Assistant**
+   - A versatile tool for various code-related tasks:
+     - Code conversion
+     - Code documentation
+     - Flow chart generation
+     - Database generation
 
-There are 2 version of openai connector class. 
+6. **Generate-Images**
+   - Generate images using the DALL-E model.
 
-1. openai_client - this uses the latest version of openai = 1.39
-2. openai_connector - this uses older version of openai = 0.28. I have maintained this version for error management and compatibility with my older programs. 
-3. Code-Assistant - this application is a simple version to generate documentation, process maps and convert the code. 
-4. Anthropic Chatbot - I have added this as an experiment. Claude's expertise is on generating the code and working on math related problems. This is more of a test-bed. will build a new app soon and upload it over here.
+7. **OpenAI-Connector**
+   - A generic class file for connecting to the OpenAI API.
+
+8. **Text-to-Speech**
+   - Convert text to speech using OpenAI's TTS model.
+
+## Additional Files
+
+- **Get-latest-version-of-libraries.py**: Utility script to check for the latest versions of libraries.
+- **Stream-response-example.py**: Example of streaming responses.
+- **Generate-posts-for-socialmedia.py**: Generate social media posts.
+- **OpenAI-client.py**: OpenAI API client implementation.
+- **OpenAI-exceptions.py**: Custom exceptions for OpenAI-related errors.
+- **Website-crawler.py**: Web crawling utility.
+
+## Data Files
+
+- **Results.json**: JSON file for storing results.
+- **Social_media_posts.json**: JSON file for storing generated social media posts.
+
+## Getting Started
+
+To use these tools, you'll need to set up the necessary API keys in .env file or as environment variables and dependencies. 
+Please refer to the individual script files for specific requirements and usage instructions.
+
+## License
+These are free to use. All apps are only simple concepts to showcase the abilities. These apps can be converted into interesting apps with your vision and creativity. 
+
+(c) - parag.jn@gmail.com
