@@ -40,6 +40,7 @@ This repository contains a collection of AI-powered tools and applications lever
 - **OpenAI-client.py**: OpenAI API client implementation.
 - **OpenAI-exceptions.py**: Custom exceptions for OpenAI-related errors.
 - **Website-crawler.py**: Web crawling utility.
+- **stock-analysis-usingGPT.py**: Simple app that uses GPT to analyze the historical stock data and generate recommendations based on the analysis. 
 
 ## Data Files
 
