@@ -1,3 +1,6 @@
+# A simple chatgpt based chatbot. 
+# Added o1-mini model to this. 
+
 import streamlit as st
 import time
 import json
@@ -33,17 +36,24 @@ def generate_response(model, messages, temperature, max_tokens, agent_type="Frie
             "Prompt Expert": "You are an expert prompt engineer"
         }.get(agent_type, "You are a helpful assistant.")
 
-        # Prepend system message according to agent type
-        messages.insert(0, {"role": "system", "content": prepended_message})
-
-        response = client.chat.completions.create(
-            model=model,
-            messages=messages,
-            max_tokens=max_tokens,
-            n=1,
-            stop=None,
-            temperature=temperature,
-        )
+        if model=='o1-mini':
+            # Prepend system message according to agent type
+            messages.insert(0, {"role": "user", "content": prepended_message})
+            response = client.chat.completions.create(
+                model=model,
+                messages=messages,
+            )
+        else:
+            # Prepend system message according to agent type
+            messages.insert(0, {"role": "system", "content": prepended_message})
+            response = client.chat.completions.create(
+                model=model,
+                messages=messages,
+                max_tokens=max_tokens,
+                n=1,
+                stop=None,
+                temperature=temperature,
+            )
         return response.choices[0].message.content
     except Exception as e:
         st.error(f"An unexpected error occurred: {e}")
@@ -64,7 +74,7 @@ def log_feedback(user_input, response):
         st.error(f"Failed to log feedback: {e}")
 
 def main():
-    model_choices = ['none', 'gpt-4', 'gpt-4o', 'gpt-4-turbo', 'gpt-4o-mini', 'gpt-3.5-turbo']
+    model_choices = ['none', 'gpt-4', 'gpt-4o', 'gpt-4-turbo', 'gpt-4o-mini', 'gpt-3.5-turbo','o1-mini']
     # put the side bar
     with st.sidebar:
         model_selection = st.radio("Select the model", model_choices, index=0)
@@ -103,9 +113,12 @@ def main():
         if model_selection != 'none':
             with st.spinner("⌛ Generating response..."):
                 # Create the context from history
-                messages = [{"role": "assistant" if i % 2 else "user", "content": message} for i, message in enumerate(st.session_state.history)]
+                if model_selection=='o1-mini':
+                    messages = [{"role": "user", "content": message} for i, message in enumerate(st.session_state.history)]
+                else:
+                    messages = [{"role": "assistant" if i % 2 else "user", "content": message} for i, message in enumerate(st.session_state.history)]
+                
                 messages.append({"role": "user", "content": st.session_state.user_input})
-
                 st.session_state.response = generate_response(model_selection, messages, creativity_value, int(max_tokens), agent_type)
                 if st.session_state.response:
                     # Update history with new response
