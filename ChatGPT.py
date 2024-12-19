@@ -12,6 +12,26 @@ from openai_client import OpenAIClient
 openai_client_obj = OpenAIClient()
 client = openai_client_obj.get_client()
 
+log_file_path = os.path.join("model_responses", "activities.json")
+
+def log_activity(input_query, output_message):
+    log_entry = {
+        "timestamp": datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
+        "inputQuery": input_query,
+        "outputMessage": output_message
+    }
+    try:
+        if os.path.exists(log_file_path):
+            with open(log_file_path, "r") as file:
+                logs = json.load(file)
+        else:
+            logs = []
+        logs.append(log_entry)
+        with open(log_file_path, "w") as file:
+            json.dump(logs, file, indent=2)
+    except Exception as e:
+        st.error(f"Failed to log activity: {e}")
+
 # Streamlit application setup
 st.set_page_config(
     page_title="Open Ai - Chatbot",
@@ -121,6 +141,8 @@ def main():
                 messages.append({"role": "user", "content": st.session_state.user_input})
                 st.session_state.response = generate_response(model_selection, messages, creativity_value, int(max_tokens), agent_type)
                 if st.session_state.response:
+                    # Log the activity
+                    log_activity(st.session_state.user_input, st.session_state.response)
                     # Update history with new response
                     st.session_state.history.extend([
                         st.session_state.user_input,
@@ -130,13 +152,15 @@ def main():
                     st.session_state.history = st.session_state.history[-10:]
 
                     def stream_data():
+                        response_text = ""
+                        placeholder = st.empty()
                         for word in st.session_state.response.split(" "):
-                            yield word + " "
+                            response_text += word + " "
+                            placeholder.markdown(f"**Bot:** {response_text}")
                             time.sleep(0.02)
 
                     st.write(f"**You:** {st.session_state.user_input}")
-                    st.write("**Bot:**")
-                    st.write_stream((stream_data()))
+                    stream_data()
                     st.write("---")
                     st.session_state.user_input = ""
                     # st.session_state.feedback = "### Did you find the response helpful?"
