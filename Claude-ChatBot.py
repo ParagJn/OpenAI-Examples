@@ -26,6 +26,7 @@ from dotenv import load_dotenv
 import os
 import json
 from datetime import datetime
+from concurrent.futures import ThreadPoolExecutor
 
 # Set Streamlit page properties
 st.set_page_config(
@@ -37,21 +38,21 @@ st.set_page_config(
 
 load_dotenv()
 
-def validate_anthropic_key(api_key)->bool:
+@st.cache_data(show_spinner=False)
+def validate_anthropic_key(api_key) -> bool:
     '''
-    Valiate the anthropic key. If the key is invalid, it will return False.
+    Validate the anthropic key. If the key is invalid, it will return False.
     Parameters: api_key (str): The API key for the Anthropic platform.
     '''
     try:
         client = anthropic.Anthropic(api_key=api_key)
         message = client.messages.create(
-        model="claude-3-5-sonnet-20241022",
-        max_tokens=1,
-        messages=[
-            {"role": "user", "content": "Hello, Claude"}
-    ]
-)
-        print(message.content)
+            model="claude-3-5-sonnet-20241022",
+            max_tokens=1,
+            messages=[
+                {"role": "user", "content": "Hello, Claude"}
+            ]
+        )
         return True
     except (anthropic.AuthenticationError, anthropic.BadRequestError):
         return False
@@ -103,6 +104,27 @@ def log_chat(model, query, response, tokens, cost=0.00000):
     with open(log_file, 'w') as f:
         json.dump(logs, f, indent=4)
 
+def calculate_cost(model: str, tokens: int) -> float:
+    """Calculate cost based on model and tokens used."""
+    cost_per_token = {
+        'claude-3-5-sonnet-20241022': 0.000003,  # $0.003 per 1K tokens
+        'claude-3-opus-20240229': 0.000015,      # $0.015 per 1K tokens
+        'claude-3-sonnet-20240229': 0.000003,    # $0.003 per 1K tokens
+        'claude-3-5-haiku-20241022': 0.0000005   # $0.0005 per 1K tokens
+    }
+    return tokens * cost_per_token.get(model, 0)
+
+def handle_anthropic_error(error: Exception) -> str:
+    """Handle various Anthropic API errors and return appropriate messages."""
+    error_messages = {
+        anthropic.RateLimitError: "Rate limit reached. Please wait a moment before trying again.",
+        anthropic.APIConnectionError: "Unable to connect to Anthropic servers. Please check your internet connection.",
+        anthropic.APIError: "An error occurred while processing your request.",
+        anthropic.BadRequestError: "Invalid request parameters.",
+        Exception: "An unexpected error occurred."
+    }
+    return error_messages.get(type(error), str(error))
+
 # Initialize the Anthropic client
 client = anthropic.Anthropic(api_key=os.environ['ANTHROPIC_API_KEY'])   # Anthropic API
 
@@ -115,10 +137,10 @@ st.sidebar.title("Chatbot Settings")
 
 with st.sidebar:
     st.write("---")
-    max_tokens = st.slider("Max Tokens",min_value=100,max_value=5000,value=100,step=10)
+    max_tokens = st.slider("Max Tokens", min_value=100, max_value=5000, value=100, step=10)
     model_choices = st.radio(
         "Select Model",
-        ["None","Claude 3.5 Sonnet","Claude 3 Opus","Claude 3 Sonnet","Claude 3 Haiku"],
+        ["None", "Claude 3.5 Sonnet", "Claude 3 Opus", "Claude 3 Sonnet", "Claude 3 Haiku"],
         index=0  # Default to Claude 3
     )
 
@@ -156,7 +178,7 @@ with st.sidebar:
         model = 'none'
 
     st.write("---")
-    st.markdown(model_help_text,unsafe_allow_html=True)
+    st.markdown(model_help_text, unsafe_allow_html=True)
 
     # clear the screen by hitting this button
     clear_screen = st.button("Clear All")
@@ -165,12 +187,29 @@ with st.sidebar:
         st.rerun()
 
 # Main content
-st.title("ANTHROP\C Claude Chatbot :robot_face:")
+st.title("ANTHROP/C Claude Chatbot :robot_face:")
 
 # Display chat history
 for message in st.session_state.messages:
     with st.chat_message(message["role"]):
         st.markdown(message["content"])
+
+def get_ai_response(model, max_tokens, api_messages):
+    """Get AI response from the model."""
+    full_response = ""
+    tokens_used = 0
+    try:
+        with client.messages.stream(
+            model=model,
+            max_tokens=max_tokens,
+            messages=api_messages
+        ) as stream:
+            for text in stream.text_stream:
+                full_response += text
+                tokens_used = client.count_tokens(full_response)
+    except Exception as e:
+        raise e
+    return full_response, tokens_used
 
 # Input for new message
 if prompt := st.chat_input("What would you like to ask?"):
@@ -192,63 +231,39 @@ if prompt := st.chat_input("What would you like to ask?"):
             st.error(f"Error accessing message history: {str(e)}")
             api_messages = [{"role": "user", "content": prompt}]
         
-        # Get AI response
+        # Get AI response using multi-threading
         with st.chat_message("assistant"):
-            tokens_used = 0
-            cost = 0.0
             message_placeholder = st.empty()
             full_response = ""
+            tokens_used = 0
+            cost = 0.0
             try:
                 if model == 'none':
                     st.warning("Select a model to continue")
                     st.stop()
-                else:
-                    with client.messages.stream(
-                        model=model,
-                        max_tokens=max_tokens,
-                        messages=api_messages
-                    ) as stream:
-                        for text in stream.text_stream:
-                            full_response += text
-                            tokens_used = client.count_tokens(full_response)
-                            # Calculate cost based on the model
-                            if model == 'claude-3-5-sonnet-20241022':
-                                cost = tokens_used * 0.000003  # $0.003 per 1K tokens
-                            elif model == 'claude-3-opus-20240229':
-                                cost = tokens_used * 0.000015  # $0.015 per 1K tokens
-                            elif model == 'claude-3-sonnet-20240229':
-                                cost = tokens_used * 0.000003  # $0.003 per 1K tokens
-                            elif model == 'claude-3-5-haiku-20241022':
-                                cost = tokens_used * 0.0000005  # $0.0005 per 1K tokens
-                            message_placeholder.markdown(full_response + "▌")
-            except anthropic.RateLimitError as e:
-                st.error(f"Rate Limit Error: {str(e)}")
-                full_response = "I've reached my usage limit. Please wait a moment and try again."
-            except anthropic.APIConnectionError as e:
-                st.error(f"Connection Error: {str(e)}")
-                full_response = "I'm having trouble connecting to the server. Please try again later."
-            except anthropic.APIError as e:
-                st.error(f"API Error: {str(e)}")
-                full_response = "I apologize, but I encountered an error while processing your request."
+                
+                with ThreadPoolExecutor() as executor:
+                    future = executor.submit(get_ai_response, model, max_tokens, api_messages)
+                    full_response, tokens_used = future.result()
+                    cost = calculate_cost(model, tokens_used)
+                    message_placeholder.markdown(full_response + "▌")
+                
+                message_placeholder.markdown(full_response)
+                st.write("---")
+                st.markdown(f'***:grey[Tokens used: {tokens_used} | Cost: ${cost:.6f}]***')
+                
+                # Streamlined logging
+                log_chat(model, prompt, full_response, tokens_used, cost)
+                
+            except Exception as e:
+                error_message = handle_anthropic_error(e)
+                st.error(error_message)
+                full_response = f"Error: {error_message}"
             
-            message_placeholder.markdown(full_response)
-            # Display token count and cost after the response
-            st.write("---")
-            st.markdown(f'***:grey[Tokens used: {tokens_used} | Cost: ${cost:.6f}]***')
-            
-            # Log the chat and display the log entry
-            log_entry = log_chat(model, prompt, full_response, tokens_used, f"{cost:.6f}")
-            # with st.expander("View Log Entry"):
-            #     st.json(log_entry)
-        
-        # Add AI response to chat history
-        st.session_state.messages.append({"role": "assistant", "content": full_response})
+            st.session_state.messages.append({"role": "assistant", "content": full_response})
     
     except Exception as e:
         st.error(f"An error occurred while processing your request: {str(e)}")
-
-# Display message count
-# st.markdown(f"<p style='font-size: small;'>Messages: {len(st.session_state.messages)}/10</p>", unsafe_allow_html=True)
 
 # Limit context to last 10 messages
 st.session_state.messages = st.session_state.messages[-10:]
