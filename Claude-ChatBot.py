@@ -24,24 +24,98 @@ import streamlit as st
 import anthropic
 from dotenv import load_dotenv
 import os
+import json
+from datetime import datetime
+
+# Set Streamlit page properties
+st.set_page_config(
+    page_title="Anthropic Claude Chatbot",
+    page_icon=":robot_face:",
+    layout="wide",
+    initial_sidebar_state="expanded"
+)
 
 load_dotenv()
+
+def validate_anthropic_key(api_key)->bool:
+    '''
+    Valiate the anthropic key. If the key is invalid, it will return False.
+    Parameters: api_key (str): The API key for the Anthropic platform.
+    '''
+    try:
+        client = anthropic.Anthropic(api_key=api_key)
+        message = client.messages.create(
+        model="claude-3-5-sonnet-20241022",
+        max_tokens=1,
+        messages=[
+            {"role": "user", "content": "Hello, Claude"}
+    ]
+)
+        print(message.content)
+        return True
+    except (anthropic.AuthenticationError, anthropic.BadRequestError):
+        return False
+
+if not os.environ.get('ANTHROPIC_API_KEY'):
+    st.error("Please set your Anthropic API key in your environment variables.")
+    st.stop()
+else:
+    if not validate_anthropic_key(os.environ['ANTHROPIC_API_KEY']):
+        st.error("Invalid Anthropic API key. Please check your environment variables.")
+        st.stop()
+
+def log_chat(model, query, response, tokens, cost=0.00000):
+    """
+    Log chat details to a JSON file.
+    Parameters:
+    model (str): The name of the model used for generating the response.
+    query (str): The user's query or input to the model.
+    response (str): The model's response to the user's query.
+    tokens (int): The number of tokens used in the query and response.
+    cost (float, optional): The cost associated with the query and response. Default is 0.00000.
+    """
+    log_dir = "model_responses"
+    log_file = os.path.join(log_dir, "activities.json")
+    
+    # Create directory if it doesn't exist
+    if not os.path.exists(log_dir):
+        os.makedirs(log_dir)
+    
+    # Read existing logs or create empty list
+    if os.path.exists(log_file):
+        with open(log_file, 'r') as f:
+            logs = json.load(f)
+    else:
+        logs = []
+    
+    # Create new log entry
+    log_entry = {
+        "model": model,
+        "timestamp": datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
+        "query": query,
+        "response": response,
+        "tokens": tokens,
+        "cost": cost
+    }
+    
+    # Add new entry and save
+    logs.append(log_entry)
+    with open(log_file, 'w') as f:
+        json.dump(logs, f, indent=4)
+
 # Initialize the Anthropic client
-client = anthropic.Anthropic(api_key=os.environ['ANTHROPIC_API_KEY'])       # antrhopic key
+client = anthropic.Anthropic(api_key=os.environ['ANTHROPIC_API_KEY'])   # Anthropic API
 
 # Initialize session state
 if "messages" not in st.session_state:
     st.session_state.messages = []
-
-# Set page config
-st.set_page_config(layout="wide", page_title="Anthropic Chatbot")
 
 # Sidebar (currently empty)
 st.sidebar.title("Chatbot Settings")
 
 with st.sidebar:
     st.write("---")
-    max_tokens = st.slider("Max Tokens",min_value=100,max_value=5000,value=300,step=10)
+    max_tokens = st.slider("Max Tokens",min_value=100,max_value=5000,value=100,step=10)
     model_choices = st.radio(
         "Select Model",
         ["None","Claude 3.5 Sonnet","Claude 3 Opus","Claude 3 Sonnet","Claude 3 Haiku"],
@@ -51,7 +125,7 @@ with st.sidebar:
 # set the model over here
     model_help_text = ""        # default message
     if model_choices == 'Claude 3.5 Sonnet':
-        model = 'claude-3-5-sonnet-20240620'
+        model = 'claude-3-5-sonnet-20241022'
         model_help_text = """-Most intelligent model<br>
 -Text and image input<br>
 -Text output<br>
@@ -72,7 +146,7 @@ with st.sidebar:
 -Training data : Aug 2023
 """
     elif model_choices == 'Claude 3 Haiku':
-        model = 'claude-3-haiku-20240307'
+        model = 'claude-3-5-haiku-20241022'
         model_help_text = """-Fastest and most compact model<br>
 -Text and image input<br> 
 -Text output<br>
@@ -91,7 +165,7 @@ with st.sidebar:
         st.rerun()
 
 # Main content
-st.title("ANTHROP\C Claude Sonnet Chatbot")
+st.title("ANTHROP\C Claude Chatbot :robot_face:")
 
 # Display chat history
 for message in st.session_state.messages:
@@ -138,13 +212,13 @@ if prompt := st.chat_input("What would you like to ask?"):
                             full_response += text
                             tokens_used = client.count_tokens(full_response)
                             # Calculate cost based on the model
-                            if model == 'claude-3-5-sonnet-20240620':
+                            if model == 'claude-3-5-sonnet-20241022':
                                 cost = tokens_used * 0.000003  # $0.003 per 1K tokens
                             elif model == 'claude-3-opus-20240229':
                                 cost = tokens_used * 0.000015  # $0.015 per 1K tokens
                             elif model == 'claude-3-sonnet-20240229':
                                 cost = tokens_used * 0.000003  # $0.003 per 1K tokens
-                            elif model == 'claude-3-haiku-20240307':
+                            elif model == 'claude-3-5-haiku-20241022':
                                 cost = tokens_used * 0.0000005  # $0.0005 per 1K tokens
                             message_placeholder.markdown(full_response + "▌")
             except anthropic.RateLimitError as e:
@@ -161,6 +235,11 @@ if prompt := st.chat_input("What would you like to ask?"):
             # Display token count and cost after the response
             st.write("---")
             st.markdown(f'***:grey[Tokens used: {tokens_used} | Cost: ${cost:.6f}]***')
+            
+            # Log the chat and display the log entry
+            log_entry = log_chat(model, prompt, full_response, tokens_used, f"{cost:.6f}")
+            # with st.expander("View Log Entry"):
+            #     st.json(log_entry)
         
         # Add AI response to chat history
         st.session_state.messages.append({"role": "assistant", "content": full_response})
@@ -173,3 +252,4 @@ if prompt := st.chat_input("What would you like to ask?"):
 
 # Limit context to last 10 messages
 st.session_state.messages = st.session_state.messages[-10:]
+
