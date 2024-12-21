@@ -105,7 +105,12 @@ def log_chat(model, query, response, tokens, cost=0.00000):
         json.dump(logs, f, indent=4)
 
 def calculate_cost(model: str, tokens: int) -> float:
-    """Calculate cost based on model and tokens used."""
+    """Calculate cost based on model and tokens used.
+    parameters: 
+    model (str): The name of the model used for generating the response.
+    tokens (int): The number of tokens used in the query and response.
+    returns: float: The estimated cost based on the model and tokens used.
+    """
     cost_per_token = {
         'claude-3-5-sonnet-20241022': 0.000003,  # $0.003 per 1K tokens
         'claude-3-opus-20240229': 0.000015,      # $0.015 per 1K tokens
@@ -115,7 +120,11 @@ def calculate_cost(model: str, tokens: int) -> float:
     return tokens * cost_per_token.get(model, 0)
 
 def handle_anthropic_error(error: Exception) -> str:
-    """Handle various Anthropic API errors and return appropriate messages."""
+    """Handle various Anthropic API errors and return appropriate messages.
+    parameters:
+    error (Exception): The error that occurred during the API call.
+    returns: str: The error message to display to the user.
+    """
     error_messages = {
         anthropic.RateLimitError: "Rate limit reached. Please wait a moment before trying again.",
         anthropic.APIConnectionError: "Unable to connect to Anthropic servers. Please check your internet connection.",
@@ -195,7 +204,13 @@ for message in st.session_state.messages:
         st.markdown(message["content"])
 
 def get_ai_response(model, max_tokens, api_messages):
-    """Get AI response from the model."""
+    """Get AI response from the model.
+    parameters:
+    model (str): The name of the model used for generating the response.
+    max_tokens (int): The maximum number of tokens to use for generating the response.
+    api_messages (list): A list of messages to provide context to the model.
+    returns: tuple: A tuple containing the full response text and the number of tokens used.
+    """
     full_response = ""
     tokens_used = 0
     try:
