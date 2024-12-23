@@ -32,5 +32,13 @@
         "response": "Here are 5 unique and engaging captions:\n\n1. \"Embracing chaos with a side of coffee and calculated chaos \ud83c\udf2a\ufe0f\u2615\ufe0f #UnexpectedJourney\"\n\n2. \"Not all who wander are lost... some are just strategically exploring life's scenic route \ud83d\uddfa\ufe0f\u2728 #AdventureMode\"\n\n3. \"Breaking algorithms and building memories, one unfiltered moment at a time ",
         "tokens": 89,
         "cost": 4.45e-05
+    },
+    {
+        "model": "claude-3-5-haiku-20241022",
+        "timestamp": "2024-12-23 10:02:47",
+        "query": "Are you able to provide guidance in stock trading ?",
+        "response": "I can provide general information and educational guidance about stock trading, but I want to be clear that I do not give personalized financial advice or stock recommendations. I can help you understand:\n\n1. Basic stock trading concepts\n2. Investment strategies\n3. Market terminology\n4. Types of investments\n5. Risk management principles\n\nHowever, for specific investment decisions, I recommend consulting with:\n- A licensed financial advisor\n- A professional stockbroker\n- Certified financial planners",
+        "tokens": 99,
+        "cost": 4.95e-05
     }
 ]
