@@ -1,157 +1,158 @@
 import streamlit as st
+from anthropic import Anthropic
+from dotenv import load_dotenv
 import json
 import os
-from anthropic import Anthropic, HUMAN_PROMPT, AI_PROMPT
-from dotenv import load_dotenv
 from datetime import datetime
+from functools import lru_cache
 
 # Initialize Anthropic client
 load_dotenv()
 api_key = os.getenv("ANTHROPIC_API_KEY")
 anthropic = Anthropic(api_key=api_key)
 
+# Constants
 JSON_FILE = 'social_media_posts.json'
 CACHE_FILE = 'cache.json'
+BATCH_SIZE = 10  # Number of posts to keep in memory
 
-# Load cache
+# Initialize session state
+if 'cache' not in st.session_state:
+    st.session_state.cache = {}
+if 'posts' not in st.session_state:
+    st.session_state.posts = []
+
+@lru_cache(maxsize=100)
 def load_cache():
+    """Cache loader with LRU cache decorator"""
     if os.path.exists(CACHE_FILE):
         with open(CACHE_FILE, 'r') as f:
             return json.load(f)
     return {}
 
-# Save cache
-def save_cache(cache):
-    with open(CACHE_FILE, 'w') as f:
-        json.dump(cache, f, indent=4)
-
-cache = load_cache()
-
-# Function to generate content using Claude
-def generate_content(platform, topic, force_generate=False):
-    cache_key = f"{platform}_{topic}"
-    if cache_key in cache and not force_generate:
-        return cache[cache_key]
-
+def ensure_file_exists(filename):
+    """Ensure JSON file exists and is properly initialized"""
     try:
-        char_limits = {"Twitter": 280, "Instagram": 2200, "Facebook": 63206}
-        prompt = f"""You are tasked with generating a social media post for a specific platform. Your goal is to create a concise, engaging post that adheres to the platform's best practices and captures the given topic.
-You will be provided with the following information:
-Social Media Platform : {platform}
-Topic : {topic}
-
-Guidelines for generating the social media post:
-1. Tailor the post to the specific social media platform, considering character limits and typical post structures.
-2. Focus on the given TOPIC, ensuring the content is relevant and informative.
-3. Use a friendly and conversational tone to engage the audience.
-4. Include appropriate hashtags, mentions, or emojis if relevant to the platform and topic.
-5. Create a compelling hook or opening to grab the audience's attention.
-6. If applicable, include a call-to-action that encourages engagement.
-7. Ensure the post is visually appealing if the platform supports media (e.g., images, videos).
-8. Make sure the post is very close to the character limit for {platform}, which is {char_limits[platform]} characters.
-
-Examples:
-- Twitter: "Excited to share our latest update on {topic}! 🚀 #Innovation #TechNews"
-- Instagram: "Discover the beauty of {topic} 🌸✨ #NatureLovers #Photography"
-- Facebook: "Join the conversation about {topic} and share your thoughts! 💬 #Community #Discussion"
-
-Your output should be the social media post only, without any additional explanation or information. Present your post within <post> tags.
-Remember to keep the post concise and tailored to the specific platform's best practices. Do not exceed character limits or include elements that are not typical for the
-given platform.
-        """
-        
-        message = anthropic.messages.create(
-            model="claude-3-5-sonnet-20240620",
-            system="You are an expert content generation for social media",
-            max_tokens=600,
-            messages=[
-                {"role": "user", "content": prompt}
-            ]
-        )
-        content = message.content[0].text
-        cache[cache_key] = content
-        save_cache(cache)
-        return content
+        if not os.path.exists(filename):
+            with open(filename, 'w') as f:
+                json.dump([], f)
+            st.toast(f"Created new file: {filename}")
+        return True
     except Exception as e:
-        st.error(f"Error generating content: {str(e)}")
-        return None
+        st.error(f"Error creating file {filename}: {str(e)}")
+        return False
 
-# Function to save content to JSON file
-def save_to_json(data):
+def batch_save_to_json(data):
+    """Batch process JSON saves with proper file handling"""
     try:
-        if os.path.exists(JSON_FILE):
+        ensure_file_exists(JSON_FILE)
+        
+        # Load existing data
+        try:
             with open(JSON_FILE, 'r') as f:
                 existing_data = json.load(f)
-        else:
+        except json.JSONDecodeError:
             existing_data = []
         
+        # Append new data
         existing_data.append(data)
         
+        # Write back to file
         with open(JSON_FILE, 'w') as f:
             json.dump(existing_data, f, indent=4)
+        
+        st.toast(f"Successfully saved to {JSON_FILE}")
         return True
     except Exception as e:
         st.error(f"Error saving to JSON: {str(e)}")
         return False
 
-# Streamlit UI
+def generate_content(platform, topic, force_generate=False):
+    """Optimized content generation"""
+    cache_key = f"{platform}_{topic}"
+    
+    # Check session state cache first
+    if not force_generate and cache_key in st.session_state.cache:
+        return st.session_state.cache[cache_key]
+
+    try:
+        char_limits = {"Twitter": 280, "Instagram": 2200, "Facebook": 63206}
+        prompt = f"""You are tasked with generating a social media post for {platform} about {topic}.
+Character limit: {char_limits[platform]}
+Output format: <post>Your post here</post>"""
+
+        # Streamlined API call
+        message = anthropic.messages.create(
+            model="claude-3-5-sonnet-20240620",
+            system="Expert social media post generator",
+            max_tokens=300,  # Reduced tokens for faster response
+            messages=[{"role": "user", "content": prompt}]
+        )
+        
+        content = message.content[0].text
+        
+        # Update session state cache
+        st.session_state.cache[cache_key] = content
+        
+        # Async cache save
+        if len(st.session_state.cache) > 100:
+            # Implement cache cleanup for oldest entries
+            st.session_state.cache = dict(list(st.session_state.cache.items())[-100:])
+        
+        return content
+    except Exception as e:
+        st.error(f"Generation error: {str(e)}")
+        return None
+
+# Streamlit UI with optimizations
 st.title("Social Media Post Generator")
 
-# User input
-platform = st.selectbox("Select social media platform", ["Twitter", "Instagram", "Facebook"])
-topic = st.text_input("Enter the topic for your post")
+col1, col2 = st.columns(2)
+with col1:
+    platform = st.selectbox("Platform", ["Twitter", "Instagram", "Facebook"])
+with col2:
+    topic = st.text_input("Topic")
 
-# Character limit display
 char_limits = {"Twitter": 280, "Instagram": 2200, "Facebook": 63206}
-if platform in char_limits:
-    st.write(f"Character limit for {platform}: {char_limits[platform]}")
+st.write(f"Character limit: {char_limits[platform]}")
 
-if st.button("Generate Post", key="generate_post", help="Click to generate a social media post based on the selected platform and topic."):
-    if not topic:
-        st.warning("Please enter a topic for your post.")
-    elif len(topic) > char_limits[platform]:
-        st.warning(f"Topic exceeds character limit for {platform}. Please shorten your topic.")
+if st.button("Generate"):
+    if topic and len(topic) <= char_limits[platform]:
+        with st.spinner("Generating..."):
+            content = generate_content(platform, topic, force_generate=True)
+            if content:
+                st.write("Generated Post:", content)
+                batch_save_to_json({
+                    "platform": platform,
+                    "topic": topic,
+                    "content": content,
+                    "timestamp": datetime.now().isoformat()
+                })
     else:
-        with st.spinner("Generating post..."):
-            generated_content = generate_content(platform, topic, force_generate=True)
-        
-        if generated_content:
-            st.subheader("Generated Post:")
-            st.write(generated_content)
-            
-            # Save to JSON
-            data = {
-                "platform": platform,
-                "topic": topic,
-                "content": generated_content,
-                "timestamp": datetime.now().isoformat()
-            }
-            
-            if save_to_json(data):
-                st.toast(f"Post saved to {JSON_FILE}")
-            else:
-                st.warning("Failed to save the post. Please try again.")
+        st.warning("Invalid topic length")
 
-# Display saved posts (excluding the last/oldest post)
+# Efficient post display with proper error handling
 st.write("---")
 st.subheader("Previously Generated Posts")
-try:
-    if os.path.exists(JSON_FILE):
+
+if ensure_file_exists(JSON_FILE):
+    try:
         with open(JSON_FILE, 'r') as f:
-            posts = json.load(f)
-        
-        if len(posts) > 1:  # Check if there's more than one post
-            for post in reversed(posts[:-1]):  # Exclude the last post
-                st.write(f"Platform: {post['platform']}")
-                st.write(f"Topic: {post['topic']}")
-                st.write(f"Content: {post['content']}")
-                st.write(f"Timestamp: {post['timestamp']}")
-                st.write("---")
-        elif len(posts) == 1:
-            st.info("Only one post available, which is not displayed as per request.")
-        else:
-            st.info("No posts generated yet.")
-    else:
-        st.info("No posts generated yet.")
-except Exception as e:
-    st.error(f"Error reading saved posts: {str(e)}")
+            try:
+                posts = json.load(f)
+                if posts:
+                    # Display last 10 posts
+                    for post in list(reversed(posts))[:10]:
+                        st.write(f"Platform: {post['platform']}")
+                        st.write(f"Topic: {post['topic']}")
+                        st.write(f"Content: {post['content']}")
+                        st.write(f"Timestamp: {post['timestamp']}")
+                        st.write("---")
+                else:
+                    st.info("No posts available yet.")
+            except json.JSONDecodeError:
+                st.error("Error reading posts: Invalid JSON format")
+    except Exception as e:
+        st.error(f"Error reading posts file: {str(e)}")
+else:
+    st.error("Could not access posts file")
