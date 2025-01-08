@@ -37,9 +37,10 @@ def describe_image_with_url(image_url):
 """
     try:
         file = genai.upload_file(image_url, mime_type="image/jpeg")
-        print(f"Uploaded file '{file.display_name}' as: {file.uri}")
+        print(f"Uploaded file '{file.display_name}' as: {file.uri}")    # file is uploaded successfully
     except Exception as e:  # hope, no upload errors, if any catch and display the message
         print(f"Error uploading file: {e}")
+        return None
     
     try:
         chat_session = model.start_chat(
@@ -78,7 +79,7 @@ except Exception as e:
     st.error(f"Error initializing model: {e}")
 
 # Streamlit app layout
-st.title("Gemini Image Description")
+st.title("Generate Image Description using Google's Gemini Model") 
 
 uploaded_file = st.file_uploader("Upload an image (PNG, JPEG, JPG)", type=["png", "jpg", "jpeg"])
 
