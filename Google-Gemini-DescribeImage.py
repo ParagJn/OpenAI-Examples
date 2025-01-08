@@ -9,6 +9,22 @@ import google.generativeai as genai
 from PIL import Image
 import io
 
+# set page configuration
+st.set_page_config(layout="wide",
+                    page_title="Generate Image Description",
+                    initial_sidebar_state="expanded",
+                    menu_items={
+                            'About': "### An app that describes the image using google's gemini model. \nConnect with me email:parag.jn@gmail.com if needed for any help.",
+                        }
+                )
+
+with st.sidebar:
+    st.title("Model Configuration")
+    # generate configuration
+    max_output_tokens = st.number_input("Max Output Tokens", min_value=100, max_value=5000, value=900, step=100)
+    temperature = st.slider("Temperature", min_value=0.1, max_value=1.0, value=1.0, step=0.1)
+    response_type = st.selectbox("Response Type", ["text/plain", "application/json"], index=0)
+
 # API Key
 genai.configure(api_key=os.getenv("GEMINI_API_KEY"))
 
@@ -62,11 +78,11 @@ def describe_image_with_url(image_url):
 
 # model configuration
 generation_config = {
-    "temperature": 1,
+    "temperature": temperature,
     "top_p": 0.95,
     "top_k": 40,
-    "max_output_tokens": 900,
-    "response_mime_type": "text/plain",
+    "max_output_tokens": max_output_tokens,
+    "response_mime_type": response_type,
 }
 
 # Initialize the model
@@ -79,7 +95,9 @@ except Exception as e:
     st.error(f"Error initializing model: {e}")
 
 # Streamlit app layout
-st.title("Generate Image Description using Google's Gemini Model") 
+st.title("Generate Image Description")
+st.markdown("This app uses Google's Gemini Model - gemini-2.0-flash-exp")
+st.markdown("**Requires a valid API key from google's generativeai. Set it up in the environment variables**")
 
 uploaded_file = st.file_uploader("Upload an image (PNG, JPEG, JPG)", type=["png", "jpg", "jpeg"])
 
@@ -99,7 +117,10 @@ if uploaded_file is not None:
                 description = describe_image_with_url(image_url)
                 if description:
                     st.write("### Image Description:")
-                    st.write(description)
+                    if response_type == "text/plain":
+                        st.write(description)
+                    else:
+                        st.json(description)
         else:
             st.error("Failed to save the file locally.")
     except Exception as e:
