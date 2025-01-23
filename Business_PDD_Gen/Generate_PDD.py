@@ -2,7 +2,8 @@
 # PDD (Business Process Design Document Generator)
 # This is a ultra-lightweight application to demonstrate the use of OpenAI's GPT-4 model for generating Business Process Design Documents (PDD) based on user's inputs. 
 # The application allows users to upload a document or an image, which is then processed to generate a design document. 
-# The application also generates a business process model and allows users to download the BPMN format, that can modified using BPMN editors available. 
+# The application also generates a business process model and allows users to download the BPMN format, that can modified using BPMN editors available.
+# Finally, the application runs a cross-check on the generated content to provide feedback on the quality of the document. 
 # Parag Jain
 #############
 
@@ -91,6 +92,7 @@ class ProcessDesignGenerator:
                 **Formatting Requirements:**
                 - Generate the points in proper bullet format.
                 - Use precise, succinct language for all points.
+                - Generate a numeric score for the document quality (1-10) based on the Business Context & Document Text.
                 
                 **Inputs:**
                 - **SAP Business Context:** {context}
@@ -275,78 +277,51 @@ class ProcessDesignGenerator:
                     st.write("Process Design Generated:")
                     st.write(output_cleaned)
 
-                with st.spinner("Generating BPMN file..."):
-                    logger.info("Generating BPMN content using the generated output")
-                    bpmn_generator = PromptGenerator(output, "BPMN")
-                    bpmn_prompt = bpmn_generator.generate()
-                    messages = [
-                        {"role": "system", "content": "You are an expert in generating BPMN 2.0 scripts"},
-                        {"role": "user", "content": bpmn_prompt}
-                    ]
-                    try:
-                        bpmn_output = self.generate_response(messages=messages, max_tokens=2800, deployment_name='gpt-4o')
-                        logger.info("BPMN content is generated, handling the output")
-                        bpmn_output = bpmn_output.choices[0].message.content.strip().replace("```", "")
-
-                        bpmn_token_size = [
+                # run this process only if len of output is greater than 100
+                if len(output) > 200:
+                    with st.spinner("Generating BPMN file..."):
+                        logger.info("Generating BPMN content using the generated output")
+                        bpmn_generator = PromptGenerator(output, "BPMN")
+                        bpmn_prompt = bpmn_generator.generate()
+                        messages = [
                             {"role": "system", "content": "You are an expert in generating BPMN 2.0 scripts"},
-                            {"role": "user", "content": bpmn_prompt},
-                            {"role": "user", "content": bpmn_output}
+                            {"role": "user", "content": bpmn_prompt}
                         ]
-                        logger.info(f"Tokens utilized for BPMN (input+output) are: {self.calculate_tokens_gpt4(bpmn_token_size)}")
-                        bpmn_cleaned_output = self.handle_bpmn_output(bpmn_output)
-                        logger.info("BPMN output is displayed, All done!")
-                    except Exception as e:
-                        logger.error(f"Error generating BPMN response: {str(e)}")
-                        st.error(f"An error occurred while generating the BPMN response: {str(e)}")
-                        st.stop()
+                        try:
+                            bpmn_output = self.generate_response(messages=messages, max_tokens=2800, deployment_name='gpt-4o')
+                            logger.info("BPMN content is generated, handling the output")
+                            bpmn_output = bpmn_output.choices[0].message.content.strip().replace("```", "")
 
+                            bpmn_token_size = [
+                                {"role": "system", "content": "You are an expert in generating BPMN 2.0 scripts"},
+                                {"role": "user", "content": bpmn_prompt},
+                                {"role": "user", "content": bpmn_output}
+                            ]
+                            logger.info(f"Tokens utilized for BPMN (input+output) are: {self.calculate_tokens_gpt4(bpmn_token_size)}")
+                            bpmn_cleaned_output = self.handle_bpmn_output(bpmn_output)
+                            logger.info("BPMN output is displayed, All done!")
+                        except Exception as e:
+                            logger.error(f"Error generating BPMN response: {str(e)}")
+                            st.error(f"An error occurred while generating the BPMN response: {str(e)}")
+                            st.stop()
+                    # running validator over the generated content
+                    if output_cleaned:
+                        with st.spinner("Additionally, Running Cross-check on the generated content..."):
+                            crosscheck_response = self.crosscheck_response(run_crosscheck=True, context="SAP Business Context", generated_text=output_cleaned)
+                            if crosscheck_response:
+                                st.write("Cross-check Response:")
+                                st.write(crosscheck_response)
+                            else:
+                                logger.warning("Cross-check response not generated")
+                                st.warning("Cross-check response not generated")
+                else:
+                    logger.warning("Output content is too short, skipping BPMN generation")
+                    st.warning("BPMN generation skipped due to insufficient content in the output")
             os.remove(filename)
             logger.info("File clean up complete, this is the end of the process")
-
-            # running validator over the generated content
-            if output_cleaned:
-                with st.spinner("Additionally, Running Cross-check on the generated content..."):
-                    crosscheck_response = self.crosscheck_response(run_crosscheck=True, context="SAP Business Context", generated_text=output_cleaned)
-                    if crosscheck_response:
-                        st.write("Cross-check Response:")
-                        st.write(crosscheck_response)
-                    else:
-                        logger.warning("Cross-check response not generated")
-                        st.warning("Cross-check response not generated")
         except FileConversionException as fce:
             logger.fatal(f"Error observed during file conversion. Error message {str(fce)}")
             st.error(f"File conversion error: {str(fce)}")
         except Exception as e:
             logger.fatal(f"Unknown error observed. Error message {str(e)}")
             st.error(f"An error occurred: {str(e)}")
-
-# Streamlit UI Page configuration
-st.set_page_config(layout="wide",
-                       page_icon="🧠",
-                       page_title="Generate Business PDD",
-                       initial_sidebar_state="expanded")
-
-# Sidebar Content
-with st.sidebar:
-    st.title("Input Options")
-    file_type = st.radio("Upload File", ["Document", "Image"])
-
-# Main content to start the program execution
-st.title("Business Process Design Generator")
-
-# Initialize the ProcessDocumentationGenerator
-pdd = ProcessDesignGenerator()
-
-# File uploader logic
-if file_type == "Document":
-    uploaded_file = st.file_uploader("Upload a document", type=['docx'])
-else:
-    uploaded_file = st.file_uploader("Upload an image", type=['jpg', 'jpeg', 'png'])
-
-if uploaded_file is not None:
-    with open(uploaded_file.name, "wb") as f:
-        f.write(uploaded_file.getbuffer())
-
-    # Process the uploaded file to generate the PDD
-    pdd.process_uploaded_file(uploaded_file.name)
