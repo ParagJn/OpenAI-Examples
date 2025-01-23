@@ -385,3 +385,39 @@
 2025-01-23 18:19 - INFO - BPMN handling complete
 2025-01-23 18:19 - INFO - BPMN output is displayed, All done!
 2025-01-23 18:19 - INFO - File clean up complete, this is the end of the process
+2025-01-23 18:37 - INFO - Application Started
+2025-01-23 18:37 - INFO - Azure AI connection initialized successfully
+2025-01-23 18:38 - INFO - Application Started
+2025-01-23 18:38 - INFO - Azure AI connection initialized successfully
+2025-01-23 18:38 - INFO - Document is uploaded and getting converted to text
+2025-01-23 18:38 - INFO - Text is extracted, sending it for prompt generation
+2025-01-23 18:38 - INFO - Prompt generation is complete
+2025-01-23 18:38 - INFO - Sending the prompt to Azure AI for LLM response
+2025-01-23 18:38 - INFO - Tokens utilized to generate content (input+output) are: 1339
+2025-01-23 18:38 - INFO - LLM response is generated, cleaning the content and displaying on screen
+2025-01-23 18:38 - INFO - Generating BPMN content using the generated output
+2025-01-23 18:38 - INFO - BPMN content is generated, handling the output
+2025-01-23 18:38 - INFO - Tokens utilized for BPMN (input+output) are: 2587
+2025-01-23 18:38 - INFO - BPMN output found in the response.
+2025-01-23 18:38 - INFO - BPMN file is rendered successfully
+2025-01-23 18:38 - INFO - BPMN handling complete
+2025-01-23 18:38 - INFO - BPMN output is displayed, All done!
+2025-01-23 18:38 - INFO - File clean up complete, this is the end of the process
+2025-01-23 18:39 - INFO - Application Started
+2025-01-23 18:39 - INFO - Azure AI connection initialized successfully
+2025-01-23 18:39 - INFO - Application Started
+2025-01-23 18:39 - INFO - Azure AI connection initialized successfully
+2025-01-23 18:39 - INFO - Document is uploaded and getting converted to text
+2025-01-23 18:39 - INFO - Text is extracted, sending it for prompt generation
+2025-01-23 18:39 - INFO - Prompt generation is complete
+2025-01-23 18:39 - INFO - Sending the prompt to Azure AI for LLM response
+2025-01-23 18:39 - INFO - Tokens utilized to generate content (input+output) are: 1473
+2025-01-23 18:39 - INFO - LLM response is generated, cleaning the content and displaying on screen
+2025-01-23 18:39 - INFO - Generating BPMN content using the generated output
+2025-01-23 18:39 - INFO - BPMN content is generated, handling the output
+2025-01-23 18:39 - INFO - Tokens utilized for BPMN (input+output) are: 2664
+2025-01-23 18:39 - INFO - BPMN output found in the response.
+2025-01-23 18:39 - INFO - BPMN file is rendered successfully
+2025-01-23 18:39 - INFO - BPMN handling complete
+2025-01-23 18:39 - INFO - BPMN output is displayed, All done!
+2025-01-23 18:39 - INFO - File clean up complete, this is the end of the process
