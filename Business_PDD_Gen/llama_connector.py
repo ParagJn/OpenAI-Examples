@@ -11,17 +11,17 @@ load_dotenv()
 
 class LlamaConnector:
     """
-    A connector class for interacting with the IBM Llama model.
+    A connector class for interacting with the CLOUD Llama model.
     This class handles authentication and communication with the Llama API, 
     enabling users to generate text based on a given prompt.
 
     Attributes:
-        api_key (str): The API key for accessing IBM's services, loaded from environment variables.
+        api_key (str): The API key for accessing CLOUD's services, loaded from environment variables.
         model_id (str): The ID of the Llama model to use, loaded from environment variables.
         project_id (str): The project ID associated with the Llama model, loaded from environment variables.
-        ibm_token_url (str): The URL for generating the IBM access token, loaded from environment variables.
+        CLOUD_token_url (str): The URL for generating the CLOUD access token, loaded from environment variables.
         llama_url (str): The base URL for the Llama API, loaded from environment variables.
-        ibm_token (str): The generated IBM access token, set dynamically during runtime.
+        CLOUD_token (str): The generated CLOUD access token, set dynamically during runtime
     """
 
     def __init__(self):
@@ -31,20 +31,20 @@ class LlamaConnector:
         self.api_key = os.getenv("LLAMA_API_KEY")
         self.model_id = os.getenv("LLAMA_MODEL_ID")
         self.project_id = os.getenv("LLAMA_PROJECT_ID")
-        self.ibm_token_url = os.getenv("LLAMA_IBM_TOKEN_URL")
+        self.CLOUD_token_url = os.getenv("LLAMA_CLOUD_TOKEN_URL")
         self.llama_url = os.getenv("LLAMA_BASE_URL")
-        self.ibm_token = None
+        self.CLOUD_token = None
 
-    def get_ibm_access_token(self):
+    def get_CLOUD_access_token(self):
         """
-        Fetches the IBM access token using the API key.
+        Fetches the CLOUD access token using the API key.
 
-        The method sends a POST request to the IBM token URL with the API key 
+        The method sends a POST request to the CLOUD token URL with the API key 
         to generate an access token. The token is used for authenticating requests 
         to the Llama API.
 
         Returns:
-            str: The IBM access token if the request is successful.
+            str: The CLOUD access token if the request is successful.
 
         Raises:
             HTTPError: If the HTTP request returns an unsuccessful status code.
@@ -53,20 +53,20 @@ class LlamaConnector:
             Exception: For any other unexpected errors.
         """
         try:
-            print("Generating IBM access token...")
+            print("Generating CLOUD access token...")
             headers = {'Content-Type': 'application/x-www-form-urlencoded'}
-            data = f'grant_type=urn:ibm:params:oauth:grant-type:apikey&apikey={self.api_key}'
+            data = f'grant_type=urn:CLOUD:params:oauth:grant-type:apikey&apikey={self.api_key}'
 
-            response = requests.post(self.ibm_token_url, headers=headers, data=data)
+            response = requests.post(self.CLOUD_token_url, headers=headers, data=data)
             response.raise_for_status()  # Raises HTTPError for bad responses
             
             data = response.json()
             if 'access_token' not in data:
                 raise KeyError("Access token not found in the response")
 
-            self.ibm_token = data['access_token']
-            print("IBM access token generated successfully.")
-            return self.ibm_token
+            self.CLOUD_token = data['access_token']
+            print("CLOUD access token generated successfully.")
+            return self.CLOUD_token
 
         except HTTPError as http_err:
             print(f'HTTP error occurred: {http_err}')
@@ -83,7 +83,7 @@ class LlamaConnector:
         Sends a prompt to the Llama model and fetches the generated output.
 
         This method sends a POST request to the Llama API with the specified prompt 
-        and additional parameters. If the IBM access token is not available, it will 
+        and additional parameters. If the CLOUD access token is not available, it will 
         attempt to generate one.
 
         Args:
@@ -98,9 +98,9 @@ class LlamaConnector:
             RequestException: If there are issues with the network request.
             Exception: For any other unexpected errors.
         """
-        if not self.ibm_token:
-            print("No IBM token found. Generating a new token...")
-            self.get_ibm_access_token()
+        if not self.CLOUD_token:
+            print("No CLOUD token found. Generating a new token...")
+            self.get_CLOUD_access_token()
 
         body = {
             "input": prompt,
@@ -115,7 +115,7 @@ class LlamaConnector:
         }
 
         headers = {
-            "Authorization": f"Bearer {self.ibm_token}",
+            "Authorization": f"Bearer {self.CLOUD_token}",
             "Content-Type": "application/json",
             "Accept": "application/json"
         }
