@@ -4,68 +4,102 @@
              xmlns:bpmndi="http://www.omg.org/spec/BPMN/20100524/DI"
              xmlns:omgdc="http://www.omg.org/spec/DD/20100524/DC"
              xmlns:omgdi="http://www.omg.org/spec/DD/20100524/DI"
-             targetNamespace="http://example.bpmn"
-             xsi:schemaLocation="http://www.omg.org/spec/BPMN/20100524/MODEL BPMN20.xsd">
-
-  <process id="materialScrappingProcess" name="Material Scrapping Process">
-    <startEvent id="startEvent1" name="Start Material Scrapping Process"/>
-    <sequenceFlow id="flow1" sourceRef="startEvent1" targetRef="taskMaterialHandling"/>
-
-    <task id="taskMaterialHandling" name="Material Handling"/>
-    <sequenceFlow id="flow2" sourceRef="taskMaterialHandling" targetRef="taskDecisionPoints"/>
-
-    <task id="taskDecisionPoints" name="Decision Points"/>
-    <sequenceFlow id="flow3" sourceRef="taskDecisionPoints" targetRef="taskStockMovement"/>
-
-    <task id="taskStockMovement" name="Stock Movement"/>
-    <sequenceFlow id="flow4" sourceRef="taskStockMovement" targetRef="taskScrappingAndWaste"/>
-
-    <task id="taskScrappingAndWaste" name="Scrapping and Waste"/>
-    <sequenceFlow id="flow5" sourceRef="taskScrappingAndWaste" targetRef="endEvent1"/>
-    
-    <endEvent id="endEvent1" name="End Material Scrapping Process"/>
+             typeLanguage="http://www.w3.org/2001/XMLSchema"
+             expressionLanguage="http://www.w3.org/1999/XPath"
+             targetNamespace="http://bpmn.io/schema/bpmn">
+  <process id="OrderToCashProcess" name="Order to Cash" isExecutable="true">
+    <startEvent id="StartEvent_1" name="Start Order to Cash">
+      <outgoing>SequenceFlow_1</outgoing>
+    </startEvent>
+    <task id="Task_CreateSalesOrder" name="Create Sales Order">
+      <incoming>SequenceFlow_1</incoming>
+      <outgoing>SequenceFlow_2</outgoing>
+    </task>
+    <task id="Task_PrintOrderConfirmation" name="Print Order Confirmation">
+      <incoming>SequenceFlow_2</incoming>
+      <outgoing>SequenceFlow_3</outgoing>
+    </task>
+    <task id="Task_CreateDelivery" name="Create Delivery">
+      <incoming>SequenceFlow_3</incoming>
+      <outgoing>SequenceFlow_4</outgoing>
+    </task>
+    <task id="Task_ExecutePickingPacking" name="Execute Picking/Packing">
+      <incoming>SequenceFlow_4</incoming>
+      <outgoing>SequenceFlow_5</outgoing>
+    </task>
+    <task id="Task_PostGoodsIssue" name="Post Goods Issue">
+      <incoming>SequenceFlow_5</incoming>
+      <outgoing>SequenceFlow_6</outgoing>
+    </task>
+    <task id="Task_CreateBillingDocument" name="Create Billing Document">
+      <incoming>SequenceFlow_6</incoming>
+      <outgoing>SequenceFlow_7</outgoing>
+    </task>
+    <endEvent id="EndEvent_1" name="Order Completed">
+      <incoming>SequenceFlow_7</incoming>
+    </endEvent>
+    <sequenceFlow id="SequenceFlow_1" sourceRef="StartEvent_1" targetRef="Task_CreateSalesOrder"/>
+    <sequenceFlow id="SequenceFlow_2" sourceRef="Task_CreateSalesOrder" targetRef="Task_PrintOrderConfirmation"/>
+    <sequenceFlow id="SequenceFlow_3" sourceRef="Task_PrintOrderConfirmation" targetRef="Task_CreateDelivery"/>
+    <sequenceFlow id="SequenceFlow_4" sourceRef="Task_CreateDelivery" targetRef="Task_ExecutePickingPacking"/>
+    <sequenceFlow id="SequenceFlow_5" sourceRef="Task_ExecutePickingPacking" targetRef="Task_PostGoodsIssue"/>
+    <sequenceFlow id="SequenceFlow_6" sourceRef="Task_PostGoodsIssue" targetRef="Task_CreateBillingDocument"/>
+    <sequenceFlow id="SequenceFlow_7" sourceRef="Task_CreateBillingDocument" targetRef="EndEvent_1"/>
   </process>
-
-  <bpmndi:BPMNDiagram id="BPMNDiagram_MaterialScrapping">
-    <bpmndi:BPMNPlane id="BPMNPlane_MaterialScrapping" bpmnElement="materialScrappingProcess">
-      <bpmndi:BPMNShape id="shape_startEvent1" bpmnElement="startEvent1">
-        <omgdc:Bounds x="100" y="160" width="36" height="36"/>
+  <bpmndi:BPMNDiagram id="BPMNDiagram_OrderToCash">
+    <bpmndi:BPMNPlane id="BPMNPlane_OrderToCash" bpmnElement="OrderToCashProcess">
+      <bpmndi:BPMNShape id="Shape_StartEvent_1" bpmnElement="StartEvent_1">
+        <omgdc:Bounds x="100" y="100" width="36" height="36"/>
       </bpmndi:BPMNShape>
-      <bpmndi:BPMNEdge id="edge_flow1" bpmnElement="flow1">
-        <omgdi:waypoint x="136" y="178"/>
-        <omgdi:waypoint x="220" y="178"/>
+      <bpmndi:BPMNShape id="Shape_Task_CreateSalesOrder" bpmnElement="Task_CreateSalesOrder">
+        <omgdc:Bounds x="200" y="95" width="100" height="50"/>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Shape_Task_PrintOrderConfirmation" bpmnElement="Task_PrintOrderConfirmation">
+        <omgdc:Bounds x="350" y="95" width="150" height="50"/>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Shape_Task_CreateDelivery" bpmnElement="Task_CreateDelivery">
+        <omgdc:Bounds x="550" y="95" width="100" height="50"/>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Shape_Task_ExecutePickingPacking" bpmnElement="Task_ExecutePickingPacking">
+        <omgdc:Bounds x="700" y="95" width="150" height="50"/>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Shape_Task_PostGoodsIssue" bpmnElement="Task_PostGoodsIssue">
+        <omgdc:Bounds x="900" y="95" width="100" height="50"/>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Shape_Task_CreateBillingDocument" bpmnElement="Task_CreateBillingDocument">
+        <omgdc:Bounds x="1050" y="95" width="150" height="50"/>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Shape_EndEvent_1" bpmnElement="EndEvent_1">
+        <omgdc:Bounds x="1250" y="100" width="36" height="36"/>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNEdge id="Edge_SequenceFlow_1" bpmnElement="SequenceFlow_1">
+        <omgdi:waypoint x="136" y="118"/>
+        <omgdi:waypoint x="200" y="118"/>
       </bpmndi:BPMNEdge>
-      <bpmndi:BPMNShape id="shape_taskMaterialHandling" bpmnElement="taskMaterialHandling">
-        <omgdc:Bounds x="220" y="158" width="100" height="40"/>
-      </bpmndi:BPMNShape>
-      <bpmndi:BPMNEdge id="edge_flow2" bpmnElement="flow2">
-        <omgdi:waypoint x="320" y="178"/>
-        <omgdi:waypoint x="400" y="178"/>
+      <bpmndi:BPMNEdge id="Edge_SequenceFlow_2" bpmnElement="SequenceFlow_2">
+        <omgdi:waypoint x="300" y="118"/>
+        <omgdi:waypoint x="350" y="118"/>
       </bpmndi:BPMNEdge>
-      <bpmndi:BPMNShape id="shape_taskDecisionPoints" bpmnElement="taskDecisionPoints">
-        <omgdc:Bounds x="400" y="158" width="100" height="40"/>
-      </bpmndi:BPMNShape>
-      <bpmndi:BPMNEdge id="edge_flow3" bpmnElement="flow3">
-        <omgdi:waypoint x="500" y="178"/>
-        <omgdi:waypoint x="580" y="178"/>
+      <bpmndi:BPMNEdge id="Edge_SequenceFlow_3" bpmnElement="SequenceFlow_3">
+        <omgdi:waypoint x="500" y="118"/>
+        <omgdi:waypoint x="550" y="118"/>
       </bpmndi:BPMNEdge>
-      <bpmndi:BPMNShape id="shape_taskStockMovement" bpmnElement="taskStockMovement">
-        <omgdc:Bounds x="580" y="158" width="100" height="40"/>
-      </bpmndi:BPMNShape>
-      <bpmndi:BPMNEdge id="edge_flow4" bpmnElement="flow4">
-        <omgdi:waypoint x="680" y="178"/>
-        <omgdi:waypoint x="760" y="178"/>
+      <bpmndi:BPMNEdge id="Edge_SequenceFlow_4" bpmnElement="SequenceFlow_4">
+        <omgdi:waypoint x="650" y="118"/>
+        <omgdi:waypoint x="700" y="118"/>
       </bpmndi:BPMNEdge>
-      <bpmndi:BPMNShape id="shape_taskScrappingAndWaste" bpmnElement="taskScrappingAndWaste">
-        <omgdc:Bounds x="760" y="158" width="100" height="40"/>
-      </bpmndi:BPMNShape>
-      <bpmndi:BPMNEdge id="edge_flow5" bpmnElement="flow5">
-        <omgdi:waypoint x="860" y="178"/>
-        <omgdi:waypoint x="940" y="178"/>
+      <bpmndi:BPMNEdge id="Edge_SequenceFlow_5" bpmnElement="SequenceFlow_5">
+        <omgdi:waypoint x="850" y="118"/>
+        <omgdi:waypoint x="900" y="118"/>
       </bpmndi:BPMNEdge>
-      <bpmndi:BPMNShape id="shape_endEvent1" bpmnElement="endEvent1">
-        <omgdc:Bounds x="940" y="160" width="36" height="36"/>
-      </bpmndi:BPMNShape>
+      <bpmndi:BPMNEdge id="Edge_SequenceFlow_6" bpmnElement="SequenceFlow_6">
+        <omgdi:waypoint x="1000" y="118"/>
+        <omgdi:waypoint x="1050" y="118"/>
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Edge_SequenceFlow_7" bpmnElement="SequenceFlow_7">
+        <omgdi:waypoint x="1200" y="118"/>
+        <omgdi:waypoint x="1250" y="118"/>
+      </bpmndi:BPMNEdge>
     </bpmndi:BPMNPlane>
   </bpmndi:BPMNDiagram>
 </definitions>

@@ -34,23 +34,23 @@ class OpenAIClient:
         return self.openai_client
 
 # Test the class file. 
-if __name__ == "__main__":
-    openai_client_obj = OpenAIClient()
-    client = openai_client_obj.get_client()
-    prompt = "hello world"
-    model = 'gpt-4o-mini'
-    max_tokens = 10
+# if __name__ == "__main__":
+#     openai_client_obj = OpenAIClient()
+#     client = openai_client_obj.get_client()
+#     prompt = "hello world"
+#     model = 'gpt-4o-mini'
+#     max_tokens = 10
 
-    try:
-        response = client.chat.completions.create(
-            model=model,
-            messages=[
-                {"role": "system", "content": "You are a helpful assistant"},
-                {"role": "user", "content": prompt}
-            ],
-            max_tokens=max_tokens,
-            n=1,
-        )
-        print(response.choices[0].message.content.strip())
-    except Exception as e:
-        print(f"An unexpected error occurred: {e}")
+#     try:
+#         response = client.chat.completions.create(
+#             model=model,
+#             messages=[
+#                 {"role": "system", "content": "You are a helpful assistant"},
+#                 {"role": "user", "content": prompt}
+#             ],
+#             max_tokens=max_tokens,
+#             n=1,
+#         )
+#         print(response.choices[0].message.content.strip())
+#     except Exception as e:
+#         print(f"An unexpected error occurred: {e}")

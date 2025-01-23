@@ -441,3 +441,221 @@
 2025-01-23 18:41 - INFO - BPMN handling complete
 2025-01-23 18:41 - INFO - BPMN output is displayed, All done!
 2025-01-23 18:41 - INFO - File clean up complete, this is the end of the process
+2025-01-23 22:13 - INFO - Application Started
+2025-01-23 22:13 - INFO - Azure AI connection initialized successfully
+2025-01-23 22:14 - INFO - Application Started
+2025-01-23 22:14 - INFO - Azure AI connection initialized successfully
+2025-01-23 22:14 - INFO - Document is uploaded and getting converted to text
+2025-01-23 22:14 - INFO - Text is extracted, sending it for prompt generation
+2025-01-23 22:14 - INFO - Prompt generation is complete
+2025-01-23 22:14 - INFO - Sending the prompt to Azure AI for LLM response
+2025-01-23 22:14 - INFO - Tokens utilized to generate content (input+output) are: 1475
+2025-01-23 22:14 - INFO - LLM response is generated, cleaning the content and displaying on screen
+2025-01-23 22:14 - INFO - Generating BPMN content using the generated output
+2025-01-23 22:14 - INFO - BPMN content is generated, handling the output
+2025-01-23 22:14 - INFO - Tokens utilized for BPMN (input+output) are: 2897
+2025-01-23 22:14 - INFO - BPMN output found in the response.
+2025-01-23 22:14 - INFO - BPMN file is rendered successfully
+2025-01-23 22:14 - INFO - BPMN handling complete
+2025-01-23 22:14 - INFO - BPMN output is displayed, All done!
+2025-01-23 22:14 - INFO - File clean up complete, this is the end of the process
+2025-01-23 22:14 - INFO - Running the cross-check on the generated content
+2025-01-23 22:14 - INFO - Cross-check response generated
+2025-01-23 22:15 - INFO - Application Started
+2025-01-23 22:15 - INFO - Azure AI connection initialized successfully
+2025-01-23 22:16 - INFO - Application Started
+2025-01-23 22:16 - INFO - Azure AI connection initialized successfully
+2025-01-23 22:16 - INFO - Document is uploaded and getting converted to text
+2025-01-23 22:16 - INFO - Text is extracted, sending it for prompt generation
+2025-01-23 22:16 - INFO - Prompt generation is complete
+2025-01-23 22:16 - INFO - Sending the prompt to Azure AI for LLM response
+2025-01-23 22:16 - INFO - Tokens utilized to generate content (input+output) are: 1461
+2025-01-23 22:16 - INFO - LLM response is generated, cleaning the content and displaying on screen
+2025-01-23 22:16 - INFO - Generating BPMN content using the generated output
+2025-01-23 22:16 - INFO - BPMN content is generated, handling the output
+2025-01-23 22:16 - INFO - Tokens utilized for BPMN (input+output) are: 2650
+2025-01-23 22:16 - INFO - BPMN output found in the response.
+2025-01-23 22:16 - INFO - BPMN file is rendered successfully
+2025-01-23 22:16 - INFO - BPMN handling complete
+2025-01-23 22:16 - INFO - BPMN output is displayed, All done!
+2025-01-23 22:16 - INFO - File clean up complete, this is the end of the process
+2025-01-23 22:16 - INFO - Running the cross-check on the generated content
+2025-01-23 22:16 - INFO - Cross-check response generated
+2025-01-23 22:17 - INFO - Application Started
+2025-01-23 22:17 - INFO - Azure AI connection initialized successfully
+2025-01-23 22:17 - INFO - Application Started
+2025-01-23 22:17 - INFO - Azure AI connection initialized successfully
+2025-01-23 22:17 - INFO - Document is uploaded and getting converted to text
+2025-01-23 22:17 - INFO - Text is extracted, sending it for prompt generation
+2025-01-23 22:17 - INFO - Prompt generation is complete
+2025-01-23 22:17 - INFO - Sending the prompt to Azure AI for LLM response
+2025-01-23 22:17 - INFO - Tokens utilized to generate content (input+output) are: 1367
+2025-01-23 22:17 - INFO - LLM response is generated, cleaning the content and displaying on screen
+2025-01-23 22:17 - INFO - Generating BPMN content using the generated output
+2025-01-23 22:18 - INFO - BPMN content is generated, handling the output
+2025-01-23 22:18 - INFO - Tokens utilized for BPMN (input+output) are: 2531
+2025-01-23 22:18 - INFO - BPMN output found in the response.
+2025-01-23 22:18 - INFO - BPMN file is rendered successfully
+2025-01-23 22:18 - INFO - BPMN handling complete
+2025-01-23 22:18 - INFO - BPMN output is displayed, All done!
+2025-01-23 22:18 - INFO - File clean up complete, this is the end of the process
+2025-01-23 22:18 - INFO - Running the cross-check on the generated content
+2025-01-23 22:18 - INFO - Cross-check response generated
+2025-01-23 22:20 - INFO - Application Started
+2025-01-23 22:20 - INFO - Azure AI connection initialized successfully
+2025-01-23 22:20 - INFO - Application Started
+2025-01-23 22:20 - INFO - Azure AI connection initialized successfully
+2025-01-23 22:21 - INFO - Application Started
+2025-01-23 22:21 - INFO - Azure AI connection initialized successfully
+2025-01-23 22:21 - INFO - Image is uploaded and getting converted to text
+2025-01-23 22:21 - INFO - Input Tokens to generate image: 6
+2025-01-23 22:21 - INFO - Output Tokens from image: 432
+2025-01-23 22:21 - INFO - Image read is complete, sending it for parsing with Prompt
+2025-01-23 22:21 - INFO - Prompt generation is complete
+2025-01-23 22:21 - INFO - Sending the prompt to Azure AI for LLM response
+2025-01-23 22:21 - INFO - Tokens utilized to generate content (input+output) are: 1498
+2025-01-23 22:21 - INFO - LLM response is generated, cleaning the content and displaying on screen
+2025-01-23 22:21 - INFO - Generating BPMN content using the generated output
+2025-01-23 22:21 - INFO - BPMN content is generated, handling the output
+2025-01-23 22:21 - INFO - Tokens utilized for BPMN (input+output) are: 2457
+2025-01-23 22:21 - INFO - BPMN output found in the response.
+2025-01-23 22:21 - INFO - BPMN file is rendered successfully
+2025-01-23 22:21 - INFO - BPMN handling complete
+2025-01-23 22:21 - INFO - BPMN output is displayed, All done!
+2025-01-23 22:21 - INFO - File clean up complete, this is the end of the process
+2025-01-23 22:21 - INFO - Running the cross-check on the generated content
+2025-01-23 22:22 - INFO - Cross-check response generated
+2025-01-23 22:23 - INFO - Application Started
+2025-01-23 22:23 - INFO - Azure AI connection initialized successfully
+2025-01-23 22:23 - INFO - Application Started
+2025-01-23 22:23 - INFO - Azure AI connection initialized successfully
+2025-01-23 22:23 - INFO - Application Started
+2025-01-23 22:23 - INFO - Azure AI connection initialized successfully
+2025-01-23 22:23 - INFO - Image is uploaded and getting converted to text
+2025-01-23 22:23 - INFO - Input Tokens to generate image: 6
+2025-01-23 22:23 - INFO - Output Tokens from image: 486
+2025-01-23 22:23 - INFO - Image read is complete, sending it for parsing with Prompt
+2025-01-23 22:23 - INFO - Prompt generation is complete
+2025-01-23 22:23 - INFO - Sending the prompt to Azure AI for LLM response
+2025-01-23 22:23 - INFO - Tokens utilized to generate content (input+output) are: 1611
+2025-01-23 22:23 - INFO - LLM response is generated, cleaning the content and displaying on screen
+2025-01-23 22:23 - INFO - Generating BPMN content using the generated output
+2025-01-23 22:24 - INFO - BPMN content is generated, handling the output
+2025-01-23 22:24 - INFO - Tokens utilized for BPMN (input+output) are: 2416
+2025-01-23 22:24 - INFO - BPMN output found in the response.
+2025-01-23 22:24 - INFO - BPMN file is rendered successfully
+2025-01-23 22:24 - INFO - BPMN handling complete
+2025-01-23 22:24 - INFO - BPMN output is displayed, All done!
+2025-01-23 22:24 - INFO - File clean up complete, this is the end of the process
+2025-01-23 22:24 - INFO - Running the cross-check on the generated content
+2025-01-23 22:24 - INFO - Cross-check response generated
+2025-01-23 22:28 - INFO - Application Started
+2025-01-23 22:28 - INFO - Azure AI connection initialized successfully
+2025-01-23 22:28 - INFO - Application Started
+2025-01-23 22:28 - INFO - Azure AI connection initialized successfully
+2025-01-23 22:28 - INFO - Application Started
+2025-01-23 22:28 - INFO - Azure AI connection initialized successfully
+2025-01-23 22:28 - INFO - Image is uploaded and getting converted to text
+2025-01-23 22:28 - INFO - Input Tokens to generate image: 6
+2025-01-23 22:29 - INFO - Output Tokens from image: 570
+2025-01-23 22:29 - INFO - Image read is complete, sending it for parsing with Prompt
+2025-01-23 22:29 - INFO - Prompt generation is complete
+2025-01-23 22:29 - INFO - Sending the prompt to Azure AI for LLM response
+2025-01-23 22:29 - INFO - Tokens utilized to generate content (input+output) are: 1629
+2025-01-23 22:29 - INFO - LLM response is generated, cleaning the content and displaying on screen
+2025-01-23 22:29 - INFO - Generating BPMN content using the generated output
+2025-01-23 22:29 - INFO - BPMN content is generated, handling the output
+2025-01-23 22:29 - INFO - Tokens utilized for BPMN (input+output) are: 1928
+2025-01-23 22:29 - INFO - BPMN output found in the response.
+2025-01-23 22:29 - INFO - BPMN file is rendered successfully
+2025-01-23 22:29 - INFO - BPMN handling complete
+2025-01-23 22:29 - INFO - BPMN output is displayed, All done!
+2025-01-23 22:29 - INFO - File clean up complete, this is the end of the process
+2025-01-23 22:29 - INFO - Running the cross-check on the generated content
+2025-01-23 22:29 - INFO - Cross-check response generated
+2025-01-23 22:30 - INFO - Application Started
+2025-01-23 22:30 - INFO - Azure AI connection initialized successfully
+2025-01-23 22:30 - INFO - Application Started
+2025-01-23 22:30 - INFO - Azure AI connection initialized successfully
+2025-01-23 22:30 - INFO - Application Started
+2025-01-23 22:30 - INFO - Azure AI connection initialized successfully
+2025-01-23 22:30 - INFO - Image is uploaded and getting converted to text
+2025-01-23 22:30 - INFO - Input Tokens to generate image: 6
+2025-01-23 22:30 - INFO - Output Tokens from image: 598
+2025-01-23 22:30 - INFO - Image read is complete, sending it for parsing with Prompt
+2025-01-23 22:30 - INFO - Prompt generation is complete
+2025-01-23 22:30 - INFO - Sending the prompt to Azure AI for LLM response
+2025-01-23 22:31 - INFO - Tokens utilized to generate content (input+output) are: 1843
+2025-01-23 22:31 - INFO - LLM response is generated, cleaning the content and displaying on screen
+2025-01-23 22:31 - INFO - Generating BPMN content using the generated output
+2025-01-23 22:31 - INFO - BPMN content is generated, handling the output
+2025-01-23 22:31 - INFO - Tokens utilized for BPMN (input+output) are: 2402
+2025-01-23 22:31 - INFO - BPMN output found in the response.
+2025-01-23 22:31 - INFO - BPMN file is rendered successfully
+2025-01-23 22:31 - INFO - BPMN handling complete
+2025-01-23 22:31 - INFO - BPMN output is displayed, All done!
+2025-01-23 22:31 - INFO - File clean up complete, this is the end of the process
+2025-01-23 22:31 - INFO - Running the cross-check on the generated content
+2025-01-23 22:31 - INFO - Cross-check response generated
+2025-01-23 22:32 - INFO - Application Started
+2025-01-23 22:32 - INFO - Azure AI connection initialized successfully
+2025-01-23 22:32 - INFO - Application Started
+2025-01-23 22:32 - INFO - Azure AI connection initialized successfully
+2025-01-23 22:32 - INFO - Application Started
+2025-01-23 22:32 - INFO - Azure AI connection initialized successfully
+2025-01-23 22:32 - INFO - Image is uploaded and getting converted to text
+2025-01-23 22:32 - INFO - Input Tokens to generate image: 6
+2025-01-23 22:32 - INFO - Output Tokens from image: 473
+2025-01-23 22:32 - INFO - Image read is complete, sending it for parsing with Prompt
+2025-01-23 22:32 - INFO - Prompt generation is complete
+2025-01-23 22:32 - INFO - Sending the prompt to Azure AI for LLM response
+2025-01-23 22:33 - INFO - Tokens utilized to generate content (input+output) are: 2004
+2025-01-23 22:33 - INFO - LLM response is generated, cleaning the content and displaying on screen
+2025-01-23 22:33 - INFO - Generating BPMN content using the generated output
+2025-01-23 22:34 - INFO - BPMN content is generated, handling the output
+2025-01-23 22:34 - INFO - Tokens utilized for BPMN (input+output) are: 4247
+2025-01-23 22:34 - WARNING - No BPMN output found in the response.
+2025-01-23 22:34 - INFO - BPMN output is displayed, All done!
+2025-01-23 22:34 - INFO - File clean up complete, this is the end of the process
+2025-01-23 22:34 - INFO - Running the cross-check on the generated content
+2025-01-23 22:34 - INFO - Cross-check response generated
+2025-01-23 22:35 - INFO - Application Started
+2025-01-23 22:35 - INFO - Azure AI connection initialized successfully
+2025-01-23 22:35 - INFO - Application Started
+2025-01-23 22:35 - INFO - Azure AI connection initialized successfully
+2025-01-23 22:35 - INFO - Document is uploaded and getting converted to text
+2025-01-23 22:35 - INFO - Text is extracted, sending it for prompt generation
+2025-01-23 22:35 - INFO - Prompt generation is complete
+2025-01-23 22:35 - INFO - Sending the prompt to Azure AI for LLM response
+2025-01-23 22:35 - INFO - Tokens utilized to generate content (input+output) are: 1562
+2025-01-23 22:35 - INFO - LLM response is generated, cleaning the content and displaying on screen
+2025-01-23 22:35 - INFO - Generating BPMN content using the generated output
+2025-01-23 22:36 - INFO - BPMN content is generated, handling the output
+2025-01-23 22:36 - INFO - Tokens utilized for BPMN (input+output) are: 2987
+2025-01-23 22:36 - INFO - BPMN output found in the response.
+2025-01-23 22:36 - INFO - BPMN file is rendered successfully
+2025-01-23 22:36 - INFO - BPMN handling complete
+2025-01-23 22:36 - INFO - BPMN output is displayed, All done!
+2025-01-23 22:36 - INFO - File clean up complete, this is the end of the process
+2025-01-23 22:36 - INFO - Running the cross-check on the generated content
+2025-01-23 22:36 - INFO - Cross-check response generated
+2025-01-23 22:37 - INFO - Application Started
+2025-01-23 22:37 - INFO - Azure AI connection initialized successfully
+2025-01-23 22:37 - INFO - Application Started
+2025-01-23 22:37 - INFO - Azure AI connection initialized successfully
+2025-01-23 22:37 - INFO - Image is uploaded and getting converted to text
+2025-01-23 22:37 - INFO - Input Tokens to generate image: 6
+2025-01-23 22:37 - INFO - Output Tokens from image: 299
+2025-01-23 22:37 - INFO - Image read is complete, sending it for parsing with Prompt
+2025-01-23 22:37 - INFO - Prompt generation is complete
+2025-01-23 22:37 - INFO - Sending the prompt to Azure AI for LLM response
+2025-01-23 22:37 - INFO - Tokens utilized to generate content (input+output) are: 686
+2025-01-23 22:37 - INFO - LLM response is generated, cleaning the content and displaying on screen
+2025-01-23 22:37 - INFO - Generating BPMN content using the generated output
+2025-01-23 22:37 - INFO - BPMN content is generated, handling the output
+2025-01-23 22:37 - INFO - Tokens utilized for BPMN (input+output) are: 970
+2025-01-23 22:37 - WARNING - No BPMN output found in the response.
+2025-01-23 22:37 - INFO - BPMN output is displayed, All done!
+2025-01-23 22:37 - INFO - File clean up complete, this is the end of the process
+2025-01-23 22:37 - INFO - Running the cross-check on the generated content
+2025-01-23 22:38 - INFO - Cross-check response generated

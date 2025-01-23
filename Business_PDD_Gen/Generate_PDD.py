@@ -12,10 +12,10 @@ import re
 import os
 import tiktoken
 from AzureAIConnection import AzureAIConnection
+from OpenAI_Connector import OpenAIClient
 from PromptGenerator import PromptGenerator
 from BPMN_Functions import render_bpmn_viewer
 from App_Logger import get_logger
-from llama_connector import LlamaConnector
 from Image_Convertor import ImageConverter
 
 # Initialize logger
@@ -89,17 +89,31 @@ class ProcessDesignGenerator:
                 - List 3 critical areas for improvement in bullet points.
 
                 **Formatting Requirements:**
-                - Enclose your entire response within `<Validate Text>` tags.
+                - Generate the points in proper bullet format.
                 - Use precise, succinct language for all points.
                 
                 **Inputs:**
                 - **SAP Business Context:** {context}
                 - **Document Text:** {generated_text}
             """
-            llama_client = LlamaConnector()
-            crosscheck_response = llama_client.run_llama(prompt)
-            logger.info("Received the cross-check response from llama model")
-            return crosscheck_response
+            openai_client_object = OpenAIClient()
+            client = openai_client_object.get_client()
+            model="gpt-4o-mini"
+            try:
+                response = client.chat.completions.create(
+                    model=model,
+                    messages=[
+                        {"role": "system", "content": "You are an expert in SAP Business Processes"},
+                        {"role": "user", "content": prompt}
+                    ],
+                    max_tokens=900
+                )
+                crosscheck_response = response.choices[0].message.content.strip()
+                logger.info("Cross-check response generated")
+                return crosscheck_response
+            except Exception as e:
+                logger.error(f"Error generating cross-check response: {str(e)}")
+                return None
         else:
             logger.info("Crosscheck on the generated content not requested")
             return None
@@ -198,18 +212,20 @@ class ProcessDesignGenerator:
                 logger.info("Image is uploaded and getting converted to text")
                 with st.sidebar:
                     st.image(filename, caption="Your Image", use_container_width=True)
-                converter = ImageConverter()
-                result = converter.convert(
-                    filename,
-                    llm_client=self.client,
-                    llm_model=self.deployment_name,
-                    llm_prompt="Describe the given image in detail"
-                )
-                logger.info("Image read is complete, sending it for parsing with Prompt")
-                generator = PromptGenerator(result.text_content, "Markdown")
-                prompt = generator.generate()
-                logger.info("Prompt generation is complete")
-
+                with st.spinner("Converting Image to Text..."):
+                    converter = ImageConverter()
+                    result = converter.convert(
+                        filename,
+                        llm_client=self.client,
+                        llm_model=self.deployment_name,
+                        llm_prompt="Describe the given image in detail"
+                    )
+                    logger.info("Image read is complete, sending it for parsing with Prompt")
+                    with st.expander(f"Extracted Text from Image:",expanded=False):
+                        st.write(result.text_content)
+                    generator = PromptGenerator(result.text_content, "Markdown")
+                    prompt = generator.generate()
+                    logger.info("Prompt generation is complete")
             elif filename.endswith('.docx'):
                 md = MarkItDown(llm_client=self.client, llm_model=self.deployment_name)
                 logger.info("Document is uploaded and getting converted to text")
@@ -233,60 +249,71 @@ class ProcessDesignGenerator:
 
             if prompt:
                 logger.info("Sending the prompt to Azure AI for LLM response")
-                st.write("Generating Process Design. Please wait...")
-                messages = [
-                    {"role": "system", "content": "You are an expert in SAP Processes and Documentation"},
-                    {"role": "user", "content": prompt}
-                ]
-                try:
-                    response = self.generate_response(messages=messages, max_tokens=1600, deployment_name=self.deployment_name)
-                    output = response.choices[0].message.content.strip()
-                except Exception as e:
-                    logger.error(f"Error generating response: {str(e)}")
-                    st.error(f"An error occurred while generating the response: {str(e)}")
-                    st.stop()
-
-                token_size = [
-                    {"role": "system", "content": "You are an expert in SAP Processes and Documentation"},
-                    {"role": "user", "content": prompt},
-                    {"role": "assistant", "content": output}
-                ]
-                total_tokens = self.calculate_tokens_gpt4(token_size)
-                logger.info(f"Tokens utilized to generate content (input+output) are: {total_tokens}")
-
-                logger.info("LLM response is generated, cleaning the content and displaying on screen")
-                output_cleaned = re.sub(r"<.*?>", "", output)
-                st.write("Process Design Generated:")
-                st.write(output_cleaned)
-                #TODO: Add the functions to validate the generated content using llama model and then, give the result back to OpenAI model. 
-                # Refactor the observations and re-generate the content. 
-                logger.info("Generating BPMN content using the generated output")
-                bpmn_generator = PromptGenerator(output, "BPMN")
-                bpmn_prompt = bpmn_generator.generate()
-                messages = [
-                    {"role": "system", "content": "You are an expert in generating BPMN 2.0 scripts"},
-                    {"role": "user", "content": bpmn_prompt}
-                ]
-                try:
-                    bpmn_output = self.generate_response(messages=messages, max_tokens=2800, deployment_name='gpt-4o')
-                    logger.info("BPMN content is generated, handling the output")
-                    bpmn_output = bpmn_output.choices[0].message.content.strip().replace("```", "")
-
-                    bpmn_token_size = [
-                        {"role": "system", "content": "You are an expert in generating BPMN 2.0 scripts"},
-                        {"role": "user", "content": bpmn_prompt},
-                        {"role": "user", "content": bpmn_output}
+                with st.spinner("Generating Process Design. Please wait..."):
+                    messages = [
+                        {"role": "system", "content": "You are an expert in SAP Processes and Documentation"},
+                        {"role": "user", "content": prompt}
                     ]
-                    logger.info(f"Tokens utilized for BPMN (input+output) are: {self.calculate_tokens_gpt4(bpmn_token_size)}")
-                    bpmn_cleaned_output = self.handle_bpmn_output(bpmn_output)
-                    logger.info("BPMN output is displayed, All done!")
-                except Exception as e:
-                    logger.error(f"Error generating BPMN response: {str(e)}")
-                    st.error(f"An error occurred while generating the BPMN response: {str(e)}")
-                    st.stop()
+                    try:
+                        response = self.generate_response(messages=messages, max_tokens=1600, deployment_name=self.deployment_name)
+                        output = response.choices[0].message.content.strip()
+                    except Exception as e:
+                        logger.error(f"Error generating response: {str(e)}")
+                        st.error(f"An error occurred while generating the response: {str(e)}")
+                        st.stop()
+
+                    token_size = [
+                        {"role": "system", "content": "You are an expert in SAP Processes and Documentation"},
+                        {"role": "user", "content": prompt},
+                        {"role": "assistant", "content": output}
+                    ]
+                    total_tokens = self.calculate_tokens_gpt4(token_size)
+                    logger.info(f"Tokens utilized to generate content (input+output) are: {total_tokens}")
+
+                    logger.info("LLM response is generated, cleaning the content and displaying on screen")
+                    output_cleaned = re.sub(r"<.*?>", "", output)
+                    st.write("Process Design Generated:")
+                    st.write(output_cleaned)
+
+                with st.spinner("Generating BPMN file..."):
+                    logger.info("Generating BPMN content using the generated output")
+                    bpmn_generator = PromptGenerator(output, "BPMN")
+                    bpmn_prompt = bpmn_generator.generate()
+                    messages = [
+                        {"role": "system", "content": "You are an expert in generating BPMN 2.0 scripts"},
+                        {"role": "user", "content": bpmn_prompt}
+                    ]
+                    try:
+                        bpmn_output = self.generate_response(messages=messages, max_tokens=2800, deployment_name='gpt-4o')
+                        logger.info("BPMN content is generated, handling the output")
+                        bpmn_output = bpmn_output.choices[0].message.content.strip().replace("```", "")
+
+                        bpmn_token_size = [
+                            {"role": "system", "content": "You are an expert in generating BPMN 2.0 scripts"},
+                            {"role": "user", "content": bpmn_prompt},
+                            {"role": "user", "content": bpmn_output}
+                        ]
+                        logger.info(f"Tokens utilized for BPMN (input+output) are: {self.calculate_tokens_gpt4(bpmn_token_size)}")
+                        bpmn_cleaned_output = self.handle_bpmn_output(bpmn_output)
+                        logger.info("BPMN output is displayed, All done!")
+                    except Exception as e:
+                        logger.error(f"Error generating BPMN response: {str(e)}")
+                        st.error(f"An error occurred while generating the BPMN response: {str(e)}")
+                        st.stop()
 
             os.remove(filename)
             logger.info("File clean up complete, this is the end of the process")
+
+            # running validator over the generated content
+            if output_cleaned:
+                with st.spinner("Additionally, Running Cross-check on the generated content..."):
+                    crosscheck_response = self.crosscheck_response(run_crosscheck=True, context="SAP Business Context", generated_text=output_cleaned)
+                    if crosscheck_response:
+                        st.write("Cross-check Response:")
+                        st.write(crosscheck_response)
+                    else:
+                        logger.warning("Cross-check response not generated")
+                        st.warning("Cross-check response not generated")
         except FileConversionException as fce:
             logger.fatal(f"Error observed during file conversion. Error message {str(fce)}")
             st.error(f"File conversion error: {str(fce)}")
