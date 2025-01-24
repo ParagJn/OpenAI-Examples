@@ -6,12 +6,15 @@ In this example, the application generates documents for SAP functional areas an
 
 ## Files
 
+### main.py
+Start the application
+
 ### Generate_PDD.py
 This is the main program file, this file needs streamlit to be installed on the system. When executed, the program runs locally on the browser window. 
 All the other modules are required by this program. Each module has a specific function. 
 To run the program, use the following command in the terminal:
 ```bash
-streamlit run Generate_PDD.py
+streamlit run main.py
 ```
 
 #### AzureAIConnection.py
