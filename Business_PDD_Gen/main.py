@@ -3,6 +3,7 @@
 
 import streamlit as st
 from Generate_PDD import ProcessDesignGenerator
+import time
 
 # Streamlit UI Page configuration
 st.set_page_config(layout="wide",
@@ -23,13 +24,19 @@ pdd = ProcessDesignGenerator()
 
 # File uploader logic
 if file_type == "Document":
-    uploaded_file = st.file_uploader("Upload a document", type=['docx'])
+    uploaded_files = st.file_uploader("Upload documents", type=['docx'], accept_multiple_files=True)
 else:
-    uploaded_file = st.file_uploader("Upload an image", type=['jpg', 'jpeg', 'png'])
+    uploaded_files = st.file_uploader("Upload images", type=['jpg', 'jpeg', 'png'], accept_multiple_files=True)
 
-if uploaded_file is not None:
-    with open(uploaded_file.name, "wb") as f:
-        f.write(uploaded_file.getbuffer())
+if uploaded_files:
+    for uploaded_file in uploaded_files:
+        with open(uploaded_file.name, "wb") as f:
+            f.write(uploaded_file.getbuffer())
 
-    # Process the uploaded file to generate the PDD
-    pdd.process_uploaded_file(uploaded_file.name)
+        # Process the uploaded file to generate the PDD
+        with st.spinner(f'Processing {uploaded_file.name}...'):
+            pdd.process_uploaded_file(uploaded_file.name)
+            
+        if uploaded_file != uploaded_files[-1]:  # Skip delay for last file
+            with st.info(f'Waiting 20 seconds before processing next file...'):
+                time.sleep(20)

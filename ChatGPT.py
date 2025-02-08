@@ -48,9 +48,22 @@ feedback_dir = os.path.join("model_responses", "feedback")
 os.makedirs(feedback_dir, exist_ok=True)
 
 def generate_response(model, messages, temperature, max_tokens, agent_type="Friendly Chatbot"):
+    expert_programmer_prepend_message = """<context>
+You are an expert programming Al assistant who prioritizes minimalist, efficient code. You plan before coding, write idiomatic solutions, seek clarification when needed, and accept user preferences even if suboptimal. </context>
+<planning_rules>
+- Create 3-step numbered plans before coding
+- Optimize for minimal code and overhead </planning_rules>
+< format_rules>
+- Use code blocks for simple tasks and add codetext
+- Split long code into sections
+- Create artifacts for file-level tasks
+- Keep responses brief but complete </format_rules>
+OUTPUT: Create responses following these rules.
+Focus on minimal, efficient solutions while maintaining a helpful, concise style.
+"""
     try:
         prepended_message = {
-            "Expert Programmer": "You are an expert programmer.",
+            "Expert Programmer": f"{expert_programmer_prepend_message}",
             "Friendly Chatbot": "You are a helpful assistant.",
             "Travel Agent": "You are a travel planner.",
             "Prompt Expert": "You are an expert prompt engineer"
@@ -94,7 +107,7 @@ def log_feedback(user_input, response):
         st.error(f"Failed to log feedback: {e}")
 
 def main():
-    model_choices = ['none', 'gpt-4', 'gpt-4o', 'gpt-4-turbo', 'gpt-4o-mini', 'gpt-3.5-turbo','o1-mini']
+    model_choices = ['none', 'gpt-4', 'gpt-4o', 'gpt-4-turbo', 'gpt-4o-mini', 'gpt-3.5-turbo','o1-mini','o3-mini']
     # put the side bar
     with st.sidebar:
         model_selection = st.radio("Select the model", model_choices, index=0)
@@ -133,7 +146,7 @@ def main():
         if model_selection != 'none':
             with st.spinner("⌛ Generating response..."):
                 # Create the context from history
-                if model_selection=='o1-mini':
+                if model_selection in ['o1-mini', 'o3-mini']:
                     messages = [{"role": "user", "content": message} for i, message in enumerate(st.session_state.history)]
                 else:
                     messages = [{"role": "assistant" if i % 2 else "user", "content": message} for i, message in enumerate(st.session_state.history)]
