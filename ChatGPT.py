@@ -69,7 +69,7 @@ Focus on minimal, efficient solutions while maintaining a helpful, concise style
             "Prompt Expert": "You are an expert prompt engineer"
         }.get(agent_type, "You are a helpful assistant.")
 
-        if model=='o1-mini':
+        if model in ['o1-mini', 'o3-mini']:
             # Prepend system message according to agent type
             messages.insert(0, {"role": "user", "content": prepended_message})
             response = client.chat.completions.create(
@@ -144,7 +144,7 @@ def main():
 
     if st.button("Send") and st.session_state.user_input:
         if model_selection != 'none':
-            with st.spinner("⌛ Generating response..."):
+            with st.spinner("⌛ Generating response...", show_time=True):
                 # Create the context from history
                 if model_selection in ['o1-mini', 'o3-mini']:
                     messages = [{"role": "user", "content": message} for i, message in enumerate(st.session_state.history)]
