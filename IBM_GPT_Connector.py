@@ -63,25 +63,25 @@ class AzureAIConnection:
         return self.deployment_name
 
 # ## Test the class file. Uncomment this block if you want to test the class file by running this file.
-if __name__ == "__main__":
-    try:
-        azure_ai_connection = AzureAIConnection()
-        client = azure_ai_connection.get_client()
-        deployment_name = azure_ai_connection.get_deployment_name()
+# if __name__ == "__main__":
+#     try:
+#         azure_ai_connection = AzureAIConnection()
+#         client = azure_ai_connection.get_client()
+#         deployment_name = azure_ai_connection.get_deployment_name()
         
-        response = client.chat.completions.create(
-            model=deployment_name,
-            messages=[
-                {"role": "system", "content": "You are an helpful assistant"},
-                {"role": "user", "content": "hello world"},
-                {"role": "user", "content": "Write an long essay on history of the world"}
-            ],
-            max_tokens=2200
-        )
-        output = response.choices[0].message.content.strip()
+#         response = client.chat.completions.create(
+#             model=deployment_name,
+#             messages=[
+#                 {"role": "system", "content": "You are an helpful assistant"},
+#                 {"role": "user", "content": "hello world"},
+#                 {"role": "user", "content": "Write an long essay on history of the world"}
+#             ],
+#             max_tokens=2200
+#         )
+#         output = response.choices[0].message.content.strip()
         
-        print("Response from Azure OpenAI:", output)
-    except AzureAIConnectionError as e:
-        print(f"Failed to connect to Azure OpenAI: {e}")
-    except Exception as e:
-        print(f"An error occurred: {e}")
+#         print("Response from Azure OpenAI:", output)
+#     except AzureAIConnectionError as e:
+#         print(f"Failed to connect to Azure OpenAI: {e}")
+#     except Exception as e:
+#         print(f"An error occurred: {e}")
