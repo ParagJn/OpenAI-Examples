@@ -11,6 +11,9 @@ import streamlit as st
 from IBM_GPT_Connector import AzureAIConnection
 import os
 
+from image_utils import ImageHandler
+from document_utils import read_file
+
 class PageConfig:
     """
     Handles Streamlit page configuration for layout and sidebar.
@@ -25,69 +28,6 @@ class PageConfig:
             layout="wide",
             initial_sidebar_state="expanded"
         )
-
-def ensure_image_folder():
-    """
-    Ensures the image folder exists for saving extracted images.
-
-    Returns:
-        str: The absolute path to the images folder.
-    """
-    img_folder = os.path.join(os.getcwd(), "document", "images")
-    os.makedirs(img_folder, exist_ok=True)
-    return img_folder
-
-def extract_images_from_docx(file, img_folder):
-    """
-    Extracts images from a docx file and saves them to the specified folder.
-
-    Args:
-        file: The uploaded docx file object.
-        img_folder (str): Path to the folder where images will be saved.
-
-    Returns:
-        list: List of file paths to the saved images.
-    """
-    from docx import Document
-    from docx.image.image import Image
-    import shutil
-
-    images = []
-    doc = Document(file)
-    rels = doc.part.rels
-    for rel in rels:
-        rel_obj = rels[rel]
-        if "image" in rel_obj.target_ref:
-            img_part = rel_obj.target_part
-            img_data = img_part.blob
-            img_name = os.path.basename(img_part.partname)
-            img_path = os.path.join(img_folder, img_name)
-            with open(img_path, "wb") as f:
-                f.write(img_data)
-            images.append(img_path)
-    return images
-
-def read_file(file):
-    """
-    Reads the uploaded file and extracts text and images (if docx).
-
-    Args:
-        file: The uploaded file object.
-
-    Returns:
-        tuple: (document_text, images_list)
-    """
-    if file.type == "text/plain":
-        return file.read().decode("utf-8"), []
-    elif file.type in ["application/vnd.openxmlformats-officedocument.wordprocessingml.document"]:
-        import docx
-        img_folder = ensure_image_folder()
-        images = extract_images_from_docx(file, img_folder)
-        doc = docx.Document(file)
-        text = "\n".join([para.text for para in doc.paragraphs])
-        return text, images
-    else:
-        return None, []
 
 def update_document(azure_client, deployment_name, messages, temperature, max_tokens, top_p, presence_penalty, frequency_penalty):
     """
@@ -135,52 +75,40 @@ def generate_docx(text, images, original_docx_file=None):
     from docx.shared import Inches
     from io import BytesIO
 
-    def is_docx_supported_image(img_path):
-        ext = os.path.splitext(img_path)[1].lower()
-        # Only allow formats supported by python-docx
-        return ext in [".png", ".jpg", ".jpeg", ".bmp", ".gif", ".tiff"]
-
-    # Always use the edited text for paragraphs
     new_doc = Document()
     text_lines = text.split("\n")
 
-    # If original_docx_file and images are provided, try to insert images at the same paragraph index as original
     if original_docx_file and images:
         try:
             original_doc = Document(original_docx_file)
             img_idx = 0
             para_img_map = []
-            # Map image positions in the original docx
-            for i, para in enumerate(original_doc.paragraphs):
+            for para in original_doc.paragraphs:
                 has_image = any("graphic" in run._element.xml for run in para.runs)
                 para_img_map.append(has_image)
-            # Build new doc with text and insert images at mapped positions
             for i, para_text in enumerate(text_lines):
                 new_doc.add_paragraph(para_text)
                 if i < len(para_img_map) and para_img_map[i] and img_idx < len(images):
                     img_path = images[img_idx]
-                    if is_docx_supported_image(img_path):
+                    if ImageHandler.is_supported_for_docx(img_path):
                         new_doc.add_picture(img_path, width=Inches(4))
                     img_idx += 1
-            # Add any remaining images at the end
             while img_idx < len(images):
                 img_path = images[img_idx]
-                if is_docx_supported_image(img_path):
+                if ImageHandler.is_supported_for_docx(img_path):
                     new_doc.add_picture(img_path, width=Inches(4))
                 img_idx += 1
         except Exception:
-            # Fallback: add all text, then all images at the end if anything fails
             for para in text_lines:
                 new_doc.add_paragraph(para)
             for img_path in images:
-                if is_docx_supported_image(img_path):
+                if ImageHandler.is_supported_for_docx(img_path):
                     new_doc.add_picture(img_path, width=Inches(4))
     else:
-        # Fallback: add all text, then all images at the end
         for para in text_lines:
             new_doc.add_paragraph(para)
         for img_path in images:
-            if is_docx_supported_image(img_path):
+            if ImageHandler.is_supported_for_docx(img_path):
                 new_doc.add_picture(img_path, width=Inches(4))
 
     output = BytesIO()
@@ -188,30 +116,16 @@ def generate_docx(text, images, original_docx_file=None):
     output.seek(0)
     return output
 
-def is_supported_image(img_path):
+def reset_app_state():
     """
-    Returns True if the image is a supported format for display (not WMF/EMF).
+    Resets the Streamlit session state for a fresh start.
     """
-    ext = os.path.splitext(img_path)[1].lower()
-    return ext not in [".wmf", ".emf"]
-
-def convert_emf_to_png(emf_path):
-    """
-    Converts an EMF/WMF image to PNG for preview using Wand (ImageMagick).
-    Returns the path to the PNG file or None if conversion fails.
-    """
-    try:
-        from wand.image import Image as WandImage
-        png_path = emf_path + ".preview.png"
-        # Convert only if not already converted
-        if not os.path.exists(png_path):
-            # Some ImageMagick installations require explicit format for EMF/WMF
-            with WandImage(filename=f"emf:{emf_path}") as img:
-                img.format = 'png'
-                img.save(filename=png_path)
-        return png_path if os.path.exists(png_path) else None
-    except Exception as e:
-        return None
+    st.session_state.current_doc = None
+    st.session_state.messages = []
+    st.session_state.history = []
+    st.session_state.images = []
+    st.session_state.checked_images = []
+    st.session_state.original_docx_file = None
 
 def main():
     """
@@ -224,8 +138,7 @@ def main():
     # Sidebar model and parameter settings
     model_options = {
         "GPT-4o": "gpt-4o",
-        "GPT-4o Mini": "gpt-4o-mini",
-        "GPT-4.1": "gpt-4-1106-preview"
+        "GPT-4o Mini": "gpt-4o-mini"        
     }
     model_label = st.sidebar.selectbox("Model", list(model_options.keys()), index=0)
     model = model_options[model_label]
@@ -256,16 +169,13 @@ def main():
         st.session_state.history = []
     if "images" not in st.session_state:
         st.session_state.images = []
+    if "checked_images" not in st.session_state:
+        st.session_state.checked_images = []
 
     uploaded_file = st.file_uploader("Upload your document", type=["txt", "docx"])
     # Reset app if file is deleted after upload
     if uploaded_file is None and st.session_state.get("current_doc") is not None:
-        st.session_state.current_doc = None
-        st.session_state.messages = []
-        st.session_state.history = []
-        st.session_state.images = []
-        st.session_state.checked_images = []
-        st.session_state.original_docx_file = None
+        reset_app_state()
         st.rerun()
 
     if uploaded_file and st.session_state.current_doc is None:
@@ -286,6 +196,7 @@ def main():
         st.session_state.current_doc = document_text
         st.session_state.history = []
         st.session_state.images = images
+        st.session_state.checked_images = [False] * len(images)
         st.session_state.original_docx_file = uploaded_file if uploaded_file.type == "application/vnd.openxmlformats-officedocument.wordprocessingml.document" else None
 
     if st.session_state.current_doc:
@@ -296,14 +207,11 @@ def main():
         reset = col2.button("Start Over")
         finalize = col3.button("Finalize & Download")
         if reset:
-            st.session_state.current_doc = None
-            st.session_state.messages = []
-            st.session_state.history = []
-            st.session_state.images = []
+            reset_app_state()
             st.rerun()
         if submit and user_prompt.strip():
             with st.spinner("Updating document...", show_time=True):
-                st.session_state.messages.append({"role": "user", "content": f"Change request: {user_prompt}"})     # Appending the user messages to the conversation
+                st.session_state.messages.append({"role": "user", "content": f"Change request: {user_prompt}"})
                 try:
                     updated_doc = update_document(
                         azure_client,
@@ -329,29 +237,29 @@ def main():
             if st.session_state.images:
                 st.markdown("**Extracted Images:**")
                 # Always sync checked_images length with images length
-                if "checked_images" not in st.session_state or len(st.session_state.checked_images) != len(st.session_state.images):
+                if len(st.session_state.checked_images) != len(st.session_state.images):
                     st.session_state.checked_images = [False] * len(st.session_state.images)
                 checked_images = []
                 for idx, img_path in enumerate(st.session_state.images):
                     col_img, col_chk = st.columns([4,1])
                     ext = os.path.splitext(img_path)[1].lower()
+                    # Always display PNG version if available (for .emf/.wmf)
                     display_path = img_path
-                    if is_supported_image(img_path):
-                        col_img.image(img_path, width=200)
-                    elif ext in [".emf", ".wmf"]:
-                        png_path = convert_emf_to_png(img_path)
+                    if ext in [".emf", ".wmf"]:
+                        png_path = ImageHandler.convert_emf_to_png(img_path)
                         if png_path and os.path.exists(png_path):
                             display_path = png_path
                             col_img.image(display_path, width=200, caption=f"Preview of {os.path.basename(img_path)}")
                         else:
                             col_img.warning(f"Image format not supported for preview: {os.path.basename(img_path)}")
+                    elif ImageHandler.is_supported_for_preview(img_path):
+                        col_img.image(img_path, width=200)
                     else:
                         col_img.warning(f"Image format not supported for preview: {os.path.basename(img_path)}")
                     checked = col_chk.checkbox("Select", value=st.session_state.checked_images[idx], key=f"img_chk_{idx}")
                     checked_images.append(checked)
                 st.session_state.checked_images = checked_images
 
-                # Sidebar delete button
                 if st.sidebar.button("Delete Selected Images"):
                     new_images = []
                     new_checked = []
@@ -360,15 +268,7 @@ def main():
                             new_images.append(img)
                             new_checked.append(False)
                         else:
-                            # Optionally, delete the file from disk and its .png preview
-                            try:
-                                if os.path.exists(img):
-                                    os.remove(img)
-                                png_preview = img + ".preview.png"
-                                if os.path.exists(png_preview):
-                                    os.remove(png_preview)
-                            except Exception:
-                                pass
+                            ImageHandler.delete_image_and_preview(img)
                     st.session_state.images = new_images
                     st.session_state.checked_images = new_checked
                     st.sidebar.success("Selected images deleted.")
@@ -396,14 +296,7 @@ def main():
                     )
                     # Delete all images and their previews after generating the document
                     for img in st.session_state.images:
-                        try:
-                            if os.path.exists(img):
-                                os.remove(img)
-                            png_preview = img + ".preview.png"
-                            if os.path.exists(png_preview):
-                                os.remove(png_preview)
-                        except Exception:
-                            pass
+                        ImageHandler.delete_image_and_preview(img)
                     st.session_state.images = []
                     st.session_state.checked_images = []
 
