@@ -117,30 +117,101 @@ def update_document(azure_client, deployment_name, messages, temperature, max_to
     )
     return response.choices[0].message.content.strip()
 
-def generate_docx(text, images):
+def generate_docx(text, images, original_docx_file=None):
     """
     Generates a Word document from the provided text and images.
+    If original_docx_file is provided, tries to preserve image positions,
+    but always uses the latest edited text for paragraphs.
 
     Args:
         text (str): The document text.
         images (list): List of image file paths.
+        original_docx_file: The original uploaded docx file object (optional).
 
     Returns:
         BytesIO: In-memory Word document for download.
     """
     from docx import Document
     from docx.shared import Inches
-    doc = Document()
-    for para in text.split("\n"):
-        doc.add_paragraph(para)
-    # Add images at the end (or you can customize placement)
-    for img_path in images:
-        doc.add_picture(img_path, width=Inches(4))
     from io import BytesIO
+
+    def is_docx_supported_image(img_path):
+        ext = os.path.splitext(img_path)[1].lower()
+        # Only allow formats supported by python-docx
+        return ext in [".png", ".jpg", ".jpeg", ".bmp", ".gif", ".tiff"]
+
+    # Always use the edited text for paragraphs
+    new_doc = Document()
+    text_lines = text.split("\n")
+
+    # If original_docx_file and images are provided, try to insert images at the same paragraph index as original
+    if original_docx_file and images:
+        try:
+            original_doc = Document(original_docx_file)
+            img_idx = 0
+            para_img_map = []
+            # Map image positions in the original docx
+            for i, para in enumerate(original_doc.paragraphs):
+                has_image = any("graphic" in run._element.xml for run in para.runs)
+                para_img_map.append(has_image)
+            # Build new doc with text and insert images at mapped positions
+            for i, para_text in enumerate(text_lines):
+                new_doc.add_paragraph(para_text)
+                if i < len(para_img_map) and para_img_map[i] and img_idx < len(images):
+                    img_path = images[img_idx]
+                    if is_docx_supported_image(img_path):
+                        new_doc.add_picture(img_path, width=Inches(4))
+                    img_idx += 1
+            # Add any remaining images at the end
+            while img_idx < len(images):
+                img_path = images[img_idx]
+                if is_docx_supported_image(img_path):
+                    new_doc.add_picture(img_path, width=Inches(4))
+                img_idx += 1
+        except Exception:
+            # Fallback: add all text, then all images at the end if anything fails
+            for para in text_lines:
+                new_doc.add_paragraph(para)
+            for img_path in images:
+                if is_docx_supported_image(img_path):
+                    new_doc.add_picture(img_path, width=Inches(4))
+    else:
+        # Fallback: add all text, then all images at the end
+        for para in text_lines:
+            new_doc.add_paragraph(para)
+        for img_path in images:
+            if is_docx_supported_image(img_path):
+                new_doc.add_picture(img_path, width=Inches(4))
+
     output = BytesIO()
-    doc.save(output)
+    new_doc.save(output)
     output.seek(0)
     return output
+
+def is_supported_image(img_path):
+    """
+    Returns True if the image is a supported format for display (not WMF/EMF).
+    """
+    ext = os.path.splitext(img_path)[1].lower()
+    return ext not in [".wmf", ".emf"]
+
+def convert_emf_to_png(emf_path):
+    """
+    Converts an EMF/WMF image to PNG for preview using Wand (ImageMagick).
+    Returns the path to the PNG file or None if conversion fails.
+    """
+    try:
+        from wand.image import Image as WandImage
+        png_path = emf_path + ".preview.png"
+        # Convert only if not already converted
+        if not os.path.exists(png_path):
+            # Some ImageMagick installations require explicit format for EMF/WMF
+            with WandImage(filename=f"emf:{emf_path}") as img:
+                img.format = 'png'
+                img.save(filename=png_path)
+        return png_path if os.path.exists(png_path) else None
+    except Exception as e:
+        return None
 
 def main():
     """
@@ -187,6 +258,16 @@ def main():
         st.session_state.images = []
 
     uploaded_file = st.file_uploader("Upload your document", type=["txt", "docx"])
+    # Reset app if file is deleted after upload
+    if uploaded_file is None and st.session_state.get("current_doc") is not None:
+        st.session_state.current_doc = None
+        st.session_state.messages = []
+        st.session_state.history = []
+        st.session_state.images = []
+        st.session_state.checked_images = []
+        st.session_state.original_docx_file = None
+        st.rerun()
+
     if uploaded_file and st.session_state.current_doc is None:
         document_text, images = read_file(uploaded_file)
         if not document_text:
@@ -205,6 +286,7 @@ def main():
         st.session_state.current_doc = document_text
         st.session_state.history = []
         st.session_state.images = images
+        st.session_state.original_docx_file = uploaded_file if uploaded_file.type == "application/vnd.openxmlformats-officedocument.wordprocessingml.document" else None
 
     if st.session_state.current_doc:
         st.subheader("Describe the changes you want to make:")
@@ -221,7 +303,7 @@ def main():
             st.rerun()
         if submit and user_prompt.strip():
             with st.spinner("Updating document...", show_time=True):
-                st.session_state.messages.append({"role": "user", "content": f"Change request: {user_prompt}"})
+                st.session_state.messages.append({"role": "user", "content": f"Change request: {user_prompt}"})     # Appending the user messages to the conversation
                 try:
                     updated_doc = update_document(
                         azure_client,
@@ -246,8 +328,51 @@ def main():
 
             if st.session_state.images:
                 st.markdown("**Extracted Images:**")
-                for img_path in st.session_state.images:
-                    st.image(img_path, width=200)
+                # Always sync checked_images length with images length
+                if "checked_images" not in st.session_state or len(st.session_state.checked_images) != len(st.session_state.images):
+                    st.session_state.checked_images = [False] * len(st.session_state.images)
+                checked_images = []
+                for idx, img_path in enumerate(st.session_state.images):
+                    col_img, col_chk = st.columns([4,1])
+                    ext = os.path.splitext(img_path)[1].lower()
+                    display_path = img_path
+                    if is_supported_image(img_path):
+                        col_img.image(img_path, width=200)
+                    elif ext in [".emf", ".wmf"]:
+                        png_path = convert_emf_to_png(img_path)
+                        if png_path and os.path.exists(png_path):
+                            display_path = png_path
+                            col_img.image(display_path, width=200, caption=f"Preview of {os.path.basename(img_path)}")
+                        else:
+                            col_img.warning(f"Image format not supported for preview: {os.path.basename(img_path)}")
+                    else:
+                        col_img.warning(f"Image format not supported for preview: {os.path.basename(img_path)}")
+                    checked = col_chk.checkbox("Select", value=st.session_state.checked_images[idx], key=f"img_chk_{idx}")
+                    checked_images.append(checked)
+                st.session_state.checked_images = checked_images
+
+                # Sidebar delete button
+                if st.sidebar.button("Delete Selected Images"):
+                    new_images = []
+                    new_checked = []
+                    for img, checked in zip(st.session_state.images, st.session_state.checked_images):
+                        if not checked:
+                            new_images.append(img)
+                            new_checked.append(False)
+                        else:
+                            # Optionally, delete the file from disk and its .png preview
+                            try:
+                                if os.path.exists(img):
+                                    os.remove(img)
+                                png_preview = img + ".preview.png"
+                                if os.path.exists(png_preview):
+                                    os.remove(png_preview)
+                            except Exception:
+                                pass
+                    st.session_state.images = new_images
+                    st.session_state.checked_images = new_checked
+                    st.sidebar.success("Selected images deleted.")
+                    st.rerun()
 
             if st.session_state.history:
                 st.markdown("**Enhancement History:**")
@@ -256,7 +381,11 @@ def main():
 
             if finalize:
                 with st.spinner("Generating Word document..."):
-                    docx_file = generate_docx(st.session_state.current_doc, st.session_state.images)
+                    docx_file = generate_docx(
+                        st.session_state.current_doc,
+                        st.session_state.images,
+                        original_docx_file=st.session_state.get("original_docx_file")
+                    )
                     st.success("Word document generated!")
                     st.download_button(
                         label="Download Updated Document",
@@ -265,6 +394,18 @@ def main():
                         file_name="updated_document.docx",
                         mime="application/vnd.openxmlformats-officedocument.wordprocessingml.document"
                     )
+                    # Delete all images and their previews after generating the document
+                    for img in st.session_state.images:
+                        try:
+                            if os.path.exists(img):
+                                os.remove(img)
+                            png_preview = img + ".preview.png"
+                            if os.path.exists(png_preview):
+                                os.remove(png_preview)
+                        except Exception:
+                            pass
+                    st.session_state.images = []
+                    st.session_state.checked_images = []
 
 if __name__ == "__main__":
     main()

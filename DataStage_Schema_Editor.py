@@ -5,6 +5,7 @@ from tqdm import tqdm
 from dotenv import load_dotenv
 from datetime import datetime
 import re
+import pickle
 
 st.set_page_config(page_title="DataStage Schema Editor", 
                    layout="wide", 
@@ -67,9 +68,10 @@ class VectorDBManager:
             print(f"Error creating vector store: {e}")
             return {}
 
-def extract_vector_records(content):
+def extract_vector_records(content, max_record_length=4000):
     """
     Extract HEADER and DSJOB records from DataStage file content.
+    For large records, splits them into nested DSSUBRECORD blocks to manage record size.
     Returns a list of records (strings).
     """
     patterns = [
@@ -80,7 +82,91 @@ def extract_vector_records(content):
     for pattern in patterns:
         matches.extend(list(pattern.finditer(content)))
     matches.sort(key=lambda m: m.start())
-    return [m.group(0).strip() for m in matches]
+    
+    records = []
+    for m in matches:
+        record = m.group(0).strip()
+        # If record is too long, split into nested DSUBRECORDs
+        if len(record) > max_record_length:
+            lines = record.splitlines()
+            header_line = lines[0]  # BEGIN HEADER or BEGIN DSJOB
+            footer_line = lines[-1]  # END HEADER or END DSJOB
+            body_lines = lines[1:-1]
+            
+            # Create DSUBRECORDs from the body
+            subrecords = []
+            current_chunk = []
+            current_size = 0
+            subrecord_count = 1
+            
+            for line in body_lines:
+                line_size = len(line) + 1  # +1 for newline
+                if current_size + line_size > max_record_length and current_chunk:
+                    # Create a DSSUBRECORD from current chunk
+                    subrecord = [f"BEGIN DSSUBRECORD {subrecord_count}"]
+                    subrecord.extend(current_chunk)
+                    subrecord.append(f"END DSSUBRECORD {subrecord_count}")
+                    subrecords.append("\n".join(subrecord))
+                    
+                    # Reset for next chunk
+                    current_chunk = []
+                    current_size = 0
+                    subrecord_count += 1
+                
+                current_chunk.append(line)
+                current_size += line_size
+            
+            # Don't forget the last chunk
+            if current_chunk:
+                subrecord = [f"BEGIN DSSUBRECORD {subrecord_count}"]
+                subrecord.extend(current_chunk)
+                subrecord.append(f"END DSSUBRECORD {subrecord_count}")
+                subrecords.append("\n".join(subrecord))
+            
+            # Reconstruct the full record with DSUBRECORDs
+            nested_record = header_line + "\n" + "\n".join(subrecords) + "\n" + footer_line
+            records.append(nested_record)
+        else:
+            # Record is not too long, keep as is
+            records.append(record)
+    
+    return records
+
+# Add a function to reassemble records from DSSUBRECORD blocks
+def reassemble_dssubrecord(record):
+    """
+    Reassemble a full record by extracting and joining content from DSSUBRECORD blocks.
+    Args:
+        record (str): A record that may contain DSSUBRECORD blocks
+    Returns:
+        str: Reassembled record with DSSUBRECORD blocks merged
+    """
+    # Check if the record contains DSUBRECORDs
+    if "BEGIN DSSUBRECORD" not in record:
+        return record
+    
+    lines = record.splitlines()
+    header_line = lines[0]
+    footer_line = lines[-1]
+    
+    # Find all DSSUBRECORD blocks
+    in_subrecord = False
+    reassembled_lines = [header_line]
+    
+    for line in lines[1:-1]:
+        if line.startswith("BEGIN DSSUBRECORD"):
+            in_subrecord = True
+            continue  # Skip the BEGIN DSSUBRECORD line
+        elif line.startswith("END DSSUBRECORD"):
+            in_subrecord = False
+            continue  # Skip the END DSSUBRECORD line
+        
+        # Only include lines that are inside a DSSUBRECORD
+        if in_subrecord:
+            reassembled_lines.append(line)
+    
+    reassembled_lines.append(footer_line)
+    return "\n".join(reassembled_lines)
 
 def search_vector_record(records, query):
     """
@@ -93,29 +179,29 @@ def search_vector_record(records, query):
             results.append((idx, rec))
     return results
 
-def update_vector_record_with_gpt(record, instruction, openai_api_key):
-    """
-    Use OpenAI GPT-4o to update the vector record as per instruction.
-    """
-    openai.api_key = openai_api_key
-    system_prompt = (
-        "You are a helpful assistant. The user will provide a DataStage export file record and a prompt describing changes to make. "
-        "You must make the requested changes, but you must strictly preserve the structure, format, and integrity of the DataStage record. "
-        "Do not break or corrupt the record. Only modify the relevant sections as per the user's request, and keep all other content unchanged. "
-        "Return the updated record as plain text."
-    )
-    messages = [
-        {"role": "system", "content": system_prompt},
-        {"role": "user", "content": f"Record:\n{record}"},
-        {"role": "user", "content": f"Change request: {instruction}"}
-    ]
-    response = openai.chat.completions.create(
-        model="gpt-4o",
-        messages=messages,
-        max_tokens=4096,
-        temperature=0.2,
-    )
-    return response.choices[0].message.content.strip()
+# def update_vector_record_with_gpt(record, instruction, openai_api_key):
+#     """
+#     Use OpenAI GPT-4o to update the vector record as per instruction.
+#     """
+#     openai.api_key = openai_api_key
+#     system_prompt = (
+#         "You are a helpful assistant. The user will provide a DataStage export file record and a prompt describing changes to make. "
+#         "You must make the requested changes, but you must strictly preserve the structure, format, and integrity of the DataStage record. "
+#         "Do not break or corrupt the record. Only modify the relevant sections as per the user's request, and keep all other content unchanged. "
+#         "Return the updated record as plain text."
+#     )
+#     messages = [
+#         {"role": "system", "content": system_prompt},
+#         {"role": "user", "content": f"Record:\n{record}"},
+#         {"role": "user", "content": f"Change request: {instruction}"}
+#     ]
+#     response = openai.chat.completions.create(
+#         model="gpt-4o",
+#         messages=messages,
+#         max_tokens=4096,
+#         temperature=0.2,
+#     )
+#     return response.choices[0].message.content.strip()
 
 def get_api_key():
     """
@@ -124,8 +210,50 @@ def get_api_key():
     load_dotenv()
     return os.getenv("OPENAI_API_KEY")
 
+def get_vector_db_path(filename):
+    """
+    Returns the path to the vector db file for a given uploaded filename.
+    """
+    base_folder = "datastage_data"
+    os.makedirs(base_folder, exist_ok=True)
+    # Use only the filename, not the full path
+    fname = os.path.basename(filename)
+    return os.path.join(base_folder, f"{fname}.vectordb.pkl")
+
+def save_vector_db(vector_records, filename):
+    """
+    Saves the vector records to a pickle file.
+    """
+    path = get_vector_db_path(filename)
+    with open(path, "wb") as f:
+        pickle.dump(vector_records, f)
+
+def load_vector_db(filename):
+    """
+    Loads the vector records from a pickle file.
+    Returns None if not found.
+    """
+    path = get_vector_db_path(filename)
+    if os.path.exists(path):
+        with open(path, "rb") as f:
+            return pickle.load(f)
+    return None
+
+def count_subrecords(record):
+    """
+    Count the number of DSSUBRECORD blocks within a record.
+    
+    Args:
+        record (str): The record text to analyze
+    
+    Returns:
+        int: The number of DSSUBRECORD blocks found
+    """
+    subrecord_pattern = re.compile(r'^BEGIN DSSUBRECORD \d+', re.MULTILINE)
+    matches = subrecord_pattern.findall(record)
+    return len(matches)
+
 def main():
-    # Remove st.set_page_config from here, already called at the top
     st.sidebar.title("Settings")
     st.title("DataStage Schema File Editor")
     st.write("Upload a DataStage .dsx or .isx file, view vector records, and edit them using GPT-4o.")
@@ -144,33 +272,53 @@ def main():
         st.session_state.vector_records = None
     if "file_loaded" not in st.session_state:
         st.session_state.file_loaded = False
+    if "vector_db_filename" not in st.session_state:
+        st.session_state.vector_db_filename = None
+    if "vector_db_loaded_from_disk" not in st.session_state:
+        st.session_state.vector_db_loaded_from_disk = False
 
     uploaded_file = st.file_uploader("Upload your DataStage file (.dsx or .isx)", type=["dsx", "isx"])
     # If file is deleted (i.e., uploaded_file is None but file_loaded is True), reset everything
     if uploaded_file is None and st.session_state.get("file_loaded", False):
         st.session_state.vector_records = None
         st.session_state.file_loaded = False
+        st.session_state.vector_db_filename = None
+        st.session_state.vector_db_loaded_from_disk = False
         st.session_state.search_text = ""
         st.session_state.replace_text = ""
         st.session_state.show_results = False
         st.rerun()
 
     if uploaded_file and not st.session_state.file_loaded:
-        # Read file with progress bar
-        file_size = uploaded_file.size
-        content = ""
-        with tqdm(total=file_size, unit='B', unit_scale=True, desc="Reading file") as pbar:
-            while True:
-                chunk = uploaded_file.read(8192)
-                if not chunk:
-                    break
-                content += chunk.decode("utf-8", errors="replace")
-                pbar.update(len(chunk))
-        st.success(f"File loaded. Size: {len(content)} characters.")
+        filename = uploaded_file.name
+        st.session_state.vector_db_filename = filename
+        # Try to load from vector db
+        vector_db = load_vector_db(filename)
+        if vector_db is not None:
+            st.session_state.vector_records = vector_db
+            st.session_state.file_loaded = True
+            st.session_state.vector_db_loaded_from_disk = True
+            st.success(f"Loaded vector DB from local storage for file: {filename}")
+        else:
+            # Read file with progress bar
+            file_size = uploaded_file.size
+            content = ""
+            with tqdm(total=file_size, unit='B', unit_scale=True, desc="Reading file") as pbar:
+                while True:
+                    chunk = uploaded_file.read(8192)
+                    if not chunk:
+                        break
+                    content += chunk.decode("utf-8", errors="replace")
+                    pbar.update(len(chunk))
+            st.success(f"File loaded. Size: {len(content)} characters.")
 
-        # Build vector store (extract records) and cache in session_state
-        st.session_state.vector_records = extract_vector_records(content)
-        st.session_state.file_loaded = True
+            # Build vector store (extract records) and cache in session_state
+            vector_records = extract_vector_records(content)
+            st.session_state.vector_records = vector_records
+            st.session_state.file_loaded = True
+            st.session_state.vector_db_loaded_from_disk = False
+            save_vector_db(vector_records, filename)
+            st.success(f"Vector DB created and saved for file: {filename}")
 
     # If vector records are loaded, use them for display and editing
     if st.session_state.vector_records:
@@ -179,10 +327,31 @@ def main():
 
         # Ask user how many records to view
         num_records = st.sidebar.number_input("How many vector records do you want to view?", min_value=1, max_value=len(records), value=min(2, len(records)), step=1)
+        # Sidebar: Option to delete and rebuild vector db if loaded from disk
+        if st.session_state.get("vector_db_loaded_from_disk", False) and st.session_state.vector_db_filename:
+            if st.sidebar.button("Delete & Rebuild Vector Data"):
+                # Remove the vector db file and reset state to force rebuild
+                vector_db_path = get_vector_db_path(st.session_state.vector_db_filename)
+                if os.path.exists(vector_db_path):
+                    os.remove(vector_db_path)
+                st.session_state.vector_records = None
+                st.session_state.file_loaded = False
+                st.session_state.vector_db_loaded_from_disk = False
+                st.rerun()
+
+        
         cols = st.columns(2)
         for idx in range(num_records):
             col = cols[idx % 2]
-            col.text_area(f"Record # {idx+1}", value=records[idx], height=500, key=f"record_{idx}")
+            record_text = records[idx]
+            col.text_area(f"Record # {idx+1}", value=record_text, height=500, key=f"record_{idx}")
+            
+            # Display number of subrecords below each text box
+            subrecord_count = count_subrecords(record_text)
+            if subrecord_count > 0:
+                col.caption(f"Contains {subrecord_count} DSSUBRECORD blocks")
+            else:
+                col.caption("No DSSUBRECORD blocks (single record)")
 
         # Always show download button in sidebar
         if st.session_state.vector_records:
@@ -193,6 +362,11 @@ def main():
                 file_name="updated_datastage.dsx",
                 mime="text/plain"
             )
+
+        # After any update to vector_records, save to disk
+        def save_current_vector_db():
+            if st.session_state.vector_db_filename:
+                save_vector_db(st.session_state.vector_records, st.session_state.vector_db_filename)
 
         # Search and edit section
         st.markdown("---")
@@ -243,6 +417,7 @@ def main():
                             if new_rec != rec:
                                 st.session_state.vector_records[rec_idx] = new_rec
                                 updated_count += 1
+                    save_current_vector_db()
                     st.sidebar.success(f"Updated {updated_count} record(s) with search & replace.")
                     # Clear the main search query after replace
                     st.session_state.search_query = ""
