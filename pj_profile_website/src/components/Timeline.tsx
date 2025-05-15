@@ -41,7 +41,7 @@ const Timeline: React.FC = () => {
   return (
     <div className="relative flex flex-col items-center">
       <div className="border-l-2 border-slate-200 absolute left-6 top-0 h-full z-0" />
-      <ul className="space-y-8 w-full">
+      <ul className="space-y-12 w-full">
         {timelineData.map((item, idx) => (
           <li key={item.year} className="relative flex items-center group">
             <button

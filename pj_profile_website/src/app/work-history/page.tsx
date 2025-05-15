@@ -3,9 +3,9 @@ import WorkHistoryCard from '../../components/WorkHistoryCard';
 
 const workHistory = [
   {
-    years: '2021 – Present',
-    title: 'Lead AI Engineer',
-    company: 'XYZ Corp',
+    years: '2012 – Present',
+    title: 'Lead Assest Engineering Services - Generative AI',
+    company: 'IBM India Pvt. Ltd.',
     description: 'Led a team of AI engineers building real-time conversational agents.'
   },
   {
